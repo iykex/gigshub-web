@@ -4,27 +4,25 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Updated to Sea Blue theme (approx #0077BE) */
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  /* Sea Blue Primary */
-  --primary: oklch(0.55 0.16 245);
+  --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.55 0.16 245);
+  --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.95 0.05 245);
-  --accent-foreground: oklch(0.55 0.16 245);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.55 0.16 245);
+  --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -33,12 +31,12 @@
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.55 0.16 245);
+  --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.55 0.16 245);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.55 0.16 245);
+  --sidebar-ring: oklch(0.708 0 0);
 }
 
 .dark {
@@ -48,9 +46,8 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.145 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  /* Sea Blue Primary - slightly lighter for dark mode */
-  --primary: oklch(0.65 0.16 245);
-  --primary-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -61,7 +58,7 @@
   --destructive-foreground: oklch(0.637 0.237 25.331);
   --border: oklch(0.269 0 0);
   --input: oklch(0.269 0 0);
-  --ring: oklch(0.55 0.16 245);
+  --ring: oklch(0.439 0 0);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -69,18 +66,17 @@
   --chart-5: oklch(0.645 0.246 16.439);
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.65 0.16 245);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.55 0.16 245);
+  --sidebar-ring: oklch(0.439 0 0);
 }
 
 @theme inline {
-  /* Updated font families */
-  --font-sans: var(--font-plus-jakarta), 'Geist', sans-serif;
-  --font-mono: var(--font-inter), 'Geist Mono', monospace;
+  --font-sans: 'Geist', 'Geist Fallback';
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -125,77 +121,5 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Updated gradient to Sea Blue tones */
-    background: radial-gradient(circle at top left, #e0f2fe, #f0f9ff, #ffffff);
-    min-height: 100vh;
-  }
-  .dark body {
-    /* Updated dark gradient to Deep Sea Blue tones */
-    background: radial-gradient(circle at top left, #0c4a6e, #075985, #0f172a);
-  }
-}
-
-/* Moved glassmorphism classes to @layer components and removed @apply */
-@layer components {
-  .glass {
-    background-color: rgb(255 255 255 / 0.3);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgb(255 255 255 / 0.2);
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  }
-  
-  .dark .glass {
-    background-color: rgb(0 0 0 / 0.3);
-    border-color: rgb(255 255 255 / 0.1);
-  }
-  
-  .glass-card {
-    background-color: rgb(255 255 255 / 0.3);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgb(255 255 255 / 0.2);
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    border-radius: 1rem;
-    transition-property: all;
-    transition-duration: 300ms;
-  }
-  
-  .glass-card:hover {
-    background-color: rgb(255 255 255 / 0.4);
-  }
-  
-  .dark .glass-card {
-    background-color: rgb(0 0 0 / 0.3);
-    border-color: rgb(255 255 255 / 0.1);
-  }
-  
-  .dark .glass-card:hover {
-    background-color: rgb(0 0 0 / 0.4);
-  }
-
-  .glass-pill {
-    background-color: rgb(255 255 255 / 0.3);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgb(255 255 255 / 0.2);
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    border-radius: 9999px;
-    padding: 0.5rem 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    transition: all 300ms;
-  }
-  
-  .glass-pill:hover {
-    transform: scale(1.05);
-  }
-  
-  .glass-pill:active {
-    transform: scale(0.95);
-  }
-  
-  .dark .glass-pill {
-    background-color: rgb(0 0 0 / 0.3);
-    border-color: rgb(255 255 255 / 0.1);
   }
 }

@@ -1,0 +1,146 @@
+name: Deploy to Vercel (Production)
+
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+
+        steps:
+            # Step 1: Checkout the repository
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            # Step 2: Setup Git author (optional, for commit context)
+            - name: Setup Git author for Vercel
+              run: |
+                  git config user.name "iykex"
+                  git config user.email "aib.quame@gmail.com"
+            # Step 3: Notify Telegram — Deployment Started
+            - name: Notify Telegram — Deployment Started
+              env:
+                  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+                  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+              run: |
+                  COMMIT_SHA=$(git rev-parse --short HEAD)
+                  LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
+                  COMMITER_NAME=$(git log -1 --pretty=%an)
+                  TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+                  REPO_NAME=$(basename $(git rev-parse --show-toplevel))
+                  BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+                  ORG_NAME=$(git config --get remote.origin.url | sed 's#.*github.com[:/]##;s#/.*##;s/\.git$//')
+                  COMMIT_URL="https://github.com/$ORG_NAME/$REPO_NAME/commit/$COMMIT_SHA"
+                  MESSAGE="🚀 <b>Production Deployment Started</b>%0A"
+                  MESSAGE="$MESSAGE<b>Repository:</b> $REPO_NAME%0A"
+                  MESSAGE="$MESSAGE<b>Branch:</b> $BRANCH_NAME%0A"
+                  MESSAGE="$MESSAGE<b>Commit:</b> <a href=\"$COMMIT_URL\">$COMMIT_SHA</a>%0A"
+                  MESSAGE="$MESSAGE<b>Committer:</b> $COMMITER_NAME%0A"
+                  MESSAGE="$MESSAGE<b>Date:</b> $TIMESTAMP%0A"
+                  MESSAGE="$MESSAGE<b>Message:</b> $LAST_COMMIT_MSG"
+                  curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+                       -d chat_id="$TELEGRAM_CHAT_ID" \
+                       -d parse_mode="HTML" \
+                       -d text="$MESSAGE"
+            # Step 4: Debug Git Info
+            - name: Debug Git Info
+              run: |
+                  echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
+                  echo "Current commit (full SHA): $(git rev-parse HEAD)"
+                  echo "Current commit (short SHA): $(git rev-parse --short HEAD)"
+                  echo "Remote branches:"
+                  git branch -r
+            # Step 5: Create Vercel deployment payload (Production)
+            - name: Prepare Vercel deployment payload
+              env:
+                  PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+              run: |
+                  REPO_NAME=$(basename $(git rev-parse --show-toplevel))
+                  ORG_NAME=$(git config --get remote.origin.url | sed 's#.*github.com[:/]##;s#/.*##;s/\.git$//')
+                  COMMIT_SHA=$(git rev-parse HEAD)
+                  REPO_ID=$(curl -s -H "Authorization: token $PAT_TOKEN" \
+                    https://api.github.com/repos/$ORG_NAME/$REPO_NAME | jq .id)
+                  echo "{
+                    \"name\": \"$REPO_NAME\",
+                    \"gitSource\": {
+                      \"type\": \"github\",
+                      \"org\": \"$ORG_NAME\",
+                      \"repo\": \"$REPO_NAME\",
+                      \"repoId\": $REPO_ID,
+                      \"ref\": \"main\",
+                      \"sha\": \"$COMMIT_SHA\"
+                    },
+                    \"target\": \"production\"
+                  }" > payload.json
+                  echo "Payload created for PRODUCTION deployment"
+                  echo "Repository: $ORG_NAME/$REPO_NAME"
+                  echo "Branch: main"
+                  echo "Commit SHA: $COMMIT_SHA"
+            # Step 6: Debug payload
+            - name: Debug payload
+              run: cat payload.json
+
+            # Step 7: Trigger Vercel Production Deployment (with retry)
+            - name: Trigger Vercel Production Deployment (with retry)
+              id: deploy
+              env:
+                  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+              run: |
+                  ATTEMPT=1
+                  MAX_ATTEMPTS=2
+                  SUCCESS=false
+                  while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+                      echo "🔁 Attempt $ATTEMPT of $MAX_ATTEMPTS..."
+                      RESPONSE=$(curl -s -o response.json -w "%{http_code}" \
+                        -X POST "https://api.vercel.com/v13/deployments?skipAutoDetectionConfirmation=1" \
+                        -H "Authorization: Bearer $VERCEL_TOKEN" \
+                        -H "Content-Type: application/json" \
+                        -d @payload.json)
+                      if [ "$RESPONSE" -eq 200 ] || [ "$RESPONSE" -eq 201 ]; then
+                          echo "✅ Deployment successful!"
+                          SUCCESS=true
+                          break
+                      else
+                          echo "⚠️ Deployment failed with status code: $RESPONSE"
+                          echo "Response body:"
+                          cat response.json
+                          echo ""
+                          echo "Retrying in 10 seconds..."
+                          sleep 10
+                      fi
+                      ATTEMPT=$((ATTEMPT+1))
+                  done
+                  if [ "$SUCCESS" = false ]; then
+                      echo "❌ Deployment failed after $MAX_ATTEMPTS attempts."
+                      exit 1
+                  fi
+            # Step 8: Notify Telegram — Deployment Success ✅
+            - name: Notify Telegram — Deployment Success
+              if: success()
+              env:
+                  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+                  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+              run: |
+                  REPO_NAME=$(basename $(git rev-parse --show-toplevel))
+                  MESSAGE="✅ <b>Production Deployment Successful</b>%0A<b>Repository:</b> $REPO_NAME%0A<b>Status:</b> Success 🎉"
+                  curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+                      -d chat_id="$TELEGRAM_CHAT_ID" \
+                      -d parse_mode="HTML" \
+                      -d text="$MESSAGE"
+            # Step 9: Notify Telegram — Deployment Failed ❌
+            - name: Notify Telegram — Deployment Failed
+              if: failure()
+              env:
+                  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+                  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+              run: |
+                  REPO_NAME=$(basename $(git rev-parse --show-toplevel))
+                  MESSAGE="❌ <b>Production Deployment Failed</b>%0A<b>Repository:</b> $REPO_NAME%0A<b>Status:</b> Failed 🚨"
+                  curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+                      -d chat_id="$TELEGRAM_CHAT_ID" \
+                      -d parse_mode="HTML" \
+                      -d text="$MESSAGE"
