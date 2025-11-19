@@ -47,7 +47,7 @@ export function TopNav() {
               </Link>
             ))}
             <ThemeToggle />
-            <Link href="/signin">
+            <Link href="/login">
               <Button variant="outline" size="sm" className="rounded-full">Sign In</Button>
             </Link>
             <Link href="/signup">
@@ -91,7 +91,7 @@ export function TopNav() {
                   </Link>
                 ))}
                 <div className="border-t border-gray-200 dark:border-gray-700 my-2" />
-                <Link href="/signin" className="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-full transition-all duration-300 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>
+                <Link href="/login" className="flex items-center justify-between px-4 py-3 text-sm font-medium rounded-full transition-all duration-300 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setIsMenuOpen(false)}>
                   <span>Sign In</span>
                   <ChevronRight size={16} />
                 </Link>
