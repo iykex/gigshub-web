@@ -1,10 +1,12 @@
 "use client"
 
 import { GlassCard } from "@/components/ui/glass-card"
-import { CreditCard, Check, X, MoreHorizontal } from "lucide-react"
-import { useEffect, useState } from "react"
+import { CreditCard, Check, X, MoreHorizontal, Loader2 } from "lucide-react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import useSWR, { mutate } from "swr"
+import { useToast } from "@/hooks/use-toast"
 
 interface Topup {
     id: string
@@ -17,30 +19,55 @@ interface Topup {
     created_at: string
 }
 
-export default function AdminTopupsPage() {
-    const [topups, setTopups] = useState<Topup[]>([])
-    const [loading, setLoading] = useState(true)
-    const [page, setPage] = useState(1)
-    const [totalPages, setTotalPages] = useState(1)
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-    useEffect(() => {
-        const fetchTopups = async () => {
-            setLoading(true)
-            try {
-                const res = await fetch(`/api/admin/topups?page=${page}&limit=10`)
-                if (res.ok) {
-                    const data = await res.json()
-                    setTopups(data.topups)
-                    setTotalPages(data.pagination.totalPages)
-                }
-            } catch (error) {
-                console.error("Failed to fetch topups", error)
-            } finally {
-                setLoading(false)
+export default function AdminTopupsPage() {
+    const [page, setPage] = useState(1)
+    const { toast } = useToast()
+    const [processingId, setProcessingId] = useState<string | null>(null)
+
+    const { data, error, isLoading } = useSWR(`/api/admin/topups?page=${page}&limit=10`, fetcher, {
+        refreshInterval: 10000, // Poll every 10 seconds
+        revalidateOnFocus: false
+    })
+
+    const topups: Topup[] = data?.topups || []
+    const totalPages = data?.pagination?.totalPages || 1
+
+    const handleAction = async (id: string, action: 'approve' | 'reject') => {
+        setProcessingId(id)
+        try {
+            const res = await fetch('/api/admin/topups/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, action })
+            })
+
+            if (!res.ok) {
+                const err = await res.json()
+                throw new Error(err.error || 'Failed to process request')
             }
+
+            toast({
+                title: "Success",
+                description: `Topup request ${action}ed successfully.`,
+            })
+
+            // Revalidate the data
+            mutate(`/api/admin/topups?page=${page}&limit=10`)
+            // Also revalidate stats as revenue might change
+            mutate('/api/admin/stats')
+
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description: error.message,
+                variant: "destructive"
+            })
+        } finally {
+            setProcessingId(null)
         }
-        fetchTopups()
-    }, [page])
+    }
 
     return (
         <div className="space-y-6">
@@ -66,7 +93,7 @@ export default function AdminTopupsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
-                            {loading ? (
+                            {isLoading ? (
                                 Array.from({ length: 5 }).map((_, i) => (
                                     <tr key={i}>
                                         <td className="px-6 py-4"><Skeleton className="h-4 w-24" /></td>
@@ -111,15 +138,27 @@ export default function AdminTopupsPage() {
                                         <td className="px-6 py-4 text-right">
                                             {topup.status === 'pending' ? (
                                                 <div className="flex justify-end gap-2">
-                                                    <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20">
-                                                        <Check className="h-4 w-4" />
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
+                                                        onClick={() => handleAction(topup.id, 'approve')}
+                                                        disabled={!!processingId}
+                                                    >
+                                                        {processingId === topup.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                                                     </Button>
-                                                    <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20">
-                                                        <X className="h-4 w-4" />
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                        onClick={() => handleAction(topup.id, 'reject')}
+                                                        disabled={!!processingId}
+                                                    >
+                                                        {processingId === topup.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
                                                     </Button>
                                                 </div>
                                             ) : (
-                                                <Button variant="ghost" size="icon">
+                                                <Button variant="ghost" size="icon" disabled>
                                                     <MoreHorizontal className="h-4 w-4" />
                                                 </Button>
                                             )}
@@ -141,7 +180,7 @@ export default function AdminTopupsPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => setPage(p => Math.max(1, p - 1))}
-                            disabled={page === 1 || loading}
+                            disabled={page === 1 || isLoading}
                         >
                             Previous
                         </Button>
@@ -149,7 +188,7 @@ export default function AdminTopupsPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                            disabled={page === totalPages || loading}
+                            disabled={page === totalPages || isLoading}
                         >
                             Next
                         </Button>
