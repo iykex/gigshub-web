@@ -9,6 +9,7 @@ interface User {
   name?: string
   phone?: string
   wallet_balance?: number
+  created_at?: string
 }
 
 interface AuthContextType {
@@ -54,7 +55,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: data.user.role,
       name: data.user.name,
       phone: data.user.phone,
-      wallet_balance: data.user.wallet_balance
+      wallet_balance: data.user.wallet_balance,
+      created_at: data.user.created_at
     }
 
     setUser(userData)
@@ -80,7 +82,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: data.user.role,
       name: data.user.name,
       phone: data.user.phone,
-      wallet_balance: data.user.wallet_balance
+      wallet_balance: data.user.wallet_balance,
+      created_at: data.user.created_at
     }
 
     setUser(userData)
