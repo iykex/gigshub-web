@@ -31,6 +31,12 @@ export function MobileNav() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [lastScrollY])
 
+  // Hide mobile nav on auth pages
+  const hideOnPaths = ['/login', '/signup', '/signin', '/sign-up', '/sign-in']
+  if (hideOnPaths.includes(pathname)) {
+    return null
+  }
+
   const links = [
     { href: "/", icon: Home, label: "Home" },
     { href: "/store", icon: Store, label: "Store" },
@@ -59,7 +65,7 @@ export function MobileNav() {
               const isActive = pathname === link.href
 
               return (
-                <MotionLink 
+                <MotionLink
                   key={link.href}
                   href={link.href}
                   whileTap={{ scale: 0.92 }}

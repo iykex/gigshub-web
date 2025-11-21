@@ -9,7 +9,7 @@ export default function AgentDashboard() {
       <div className="space-y-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Agent Dashboard</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Agent Dashboard</h1>
             <p className="text-muted-foreground">Welcome back, Agent.</p>
           </div>
           <Button className="rounded-full shadow-lg" asChild>

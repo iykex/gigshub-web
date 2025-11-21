@@ -6,14 +6,15 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/contexts/auth-context"
 import { Toaster } from "@/components/ui/toaster"
 import { MobileNav } from "@/components/nav/mobile-nav"
+import { FloatingWhatsAppWrapper } from "@/components/floating-whatsapp-wrapper"
 
-const plusJakarta = Plus_Jakarta_Sans({ 
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: '--font-plus-jakarta',
   display: 'swap',
 });
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ["latin"],
   variable: '--font-inter',
   display: 'swap',
@@ -49,7 +50,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className="h-full">
-      <body className={`${plusJakarta.variable} ${inter.variable} font-sans antialiased pb-24 md:pb-0 min-h-screen flex flex-col`}>
+      <body className={`${plusJakarta.variable} ${inter.variable} font-sans antialiased pb-0 md:pb-0 min-h-screen flex flex-col`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -59,6 +60,7 @@ export default function RootLayout({
           <AuthProvider>
             {children}
             <MobileNav />
+            <FloatingWhatsAppWrapper />
           </AuthProvider>
           <Toaster />
           <Analytics />
