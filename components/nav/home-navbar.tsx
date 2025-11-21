@@ -128,16 +128,14 @@ function AuthButton({ isMobile = false, onClose }: { isMobile?: boolean, onClose
                   }}
                 >
                   <style jsx>{`
-                    @media (prefers-color-scheme: dark) {
-                      div[style*="rgba(255, 255, 255, 0.85)"] {
-                        background: rgba(30, 30, 30, 0.85) !important;
-                        border: 1px solid rgba(255, 255, 255, 0.15) !important;
-                        box-shadow: 
-                          0 12px 40px rgba(0, 0, 0, 0.5),
-                          0 4px 12px rgba(0, 0, 0, 0.3),
-                          inset 0 1px 0 rgba(255, 255, 255, 0.15),
-                          inset 0 -1px 0 rgba(0, 0, 0, 0.4) !important;
-                      }
+                    :global(.dark) div[style*="rgba(255, 255, 255, 0.85)"] {
+                      background: rgba(30, 30, 30, 0.85) !important;
+                      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                      box-shadow: 
+                        0 12px 40px rgba(0, 0, 0, 0.5),
+                        0 4px 12px rgba(0, 0, 0, 0.3),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+                        inset 0 -1px 0 rgba(0, 0, 0, 0.4) !important;
                     }
                   `}</style>
 
@@ -347,60 +345,14 @@ export function HomeNavbar() {
             <div
               className="relative flex items-center justify-between rounded-full px-4 py-2.5 md:px-6"
               style={{
-                background: scrolled
-                  ? 'rgba(255, 255, 255, 0.8)'
-                  : 'rgba(255, 255, 255, 0.72)',
+                background: scrolled ? 'var(--nav-bg-scrolled)' : 'var(--nav-bg-default)',
                 backdropFilter: 'blur(40px) saturate(180%)',
                 WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                boxShadow: scrolled
-                  ? `
-                    0 8px 32px rgba(0, 0, 0, 0.12),
-                    0 2px 8px rgba(0, 0, 0, 0.06),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-                    inset 0 -1px 0 rgba(0, 0, 0, 0.08)
-                  `
-                  : `
-                    0 4px 16px rgba(0, 0, 0, 0.08),
-                    0 1px 4px rgba(0, 0, 0, 0.04),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-                    inset 0 -1px 0 rgba(0, 0, 0, 0.05)
-                  `,
+                border: '1px solid var(--nav-border)',
+                boxShadow: scrolled ? 'var(--nav-shadow-scrolled)' : 'var(--nav-shadow-default)',
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
             >
-              {/* Liquid gradient overlay */}
-              <div
-                className="absolute inset-0 rounded-full opacity-40 pointer-events-none"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.1) 100%)',
-                }}
-              />
-
-              {/* Dark mode styles */}
-              <style jsx>{`
-                @media (prefers-color-scheme: dark) {
-                  nav > div > div > div:first-child {
-                    background: ${scrolled
-                  ? 'rgba(30, 30, 30, 0.8)'
-                  : 'rgba(30, 30, 30, 0.72)'} !important;
-                    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-                    box-shadow: ${scrolled
-                  ? `
-                        0 8px 32px rgba(0, 0, 0, 0.4),
-                        0 2px 8px rgba(0, 0, 0, 0.2),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.12),
-                        inset 0 -1px 0 rgba(0, 0, 0, 0.3)
-                      `
-                  : `
-                        0 4px 16px rgba(0, 0, 0, 0.3),
-                        0 1px 4px rgba(0, 0, 0, 0.15),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.1),
-                        inset 0 -1px 0 rgba(0, 0, 0, 0.2)
-                      `} !important;
-                  }
-                }
-              `}</style>
 
               {/* Logo */}
               <Link href="/" className="flex items-center relative z-10 transition-transform hover:scale-105 active:scale-95">
@@ -574,8 +526,7 @@ export function HomeNavbar() {
 
                 {/* Dark mode styles */}
                 <style jsx>{`
-                  @media (prefers-color-scheme: dark) {
-                    div[style*="rgba(255, 255, 255, 0.85)"] {
+                  :global(.dark) div[style*="rgba(255, 255, 255, 0.85)"] {
                       background: rgba(30, 30, 30, 0.85) !important;
                       border: 1px solid rgba(255, 255, 255, 0.15) !important;
                       box-shadow: 
@@ -584,7 +535,6 @@ export function HomeNavbar() {
                         inset 0 1px 0 rgba(255, 255, 255, 0.15),
                         inset 0 -1px 0 rgba(0, 0, 0, 0.4) !important;
                     }
-                  }
                 `}</style>
 
                 <div className="relative p-3 space-y-1">
