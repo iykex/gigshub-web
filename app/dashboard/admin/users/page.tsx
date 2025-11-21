@@ -2,11 +2,12 @@
 
 import { GlassCard } from "@/components/ui/glass-card"
 import { Users, Search, MoreHorizontal } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import useSWR from "swr"
 
 interface User {
     id: string
@@ -18,30 +19,17 @@ interface User {
     created_at: string
 }
 
-export default function AdminUsersPage() {
-    const [users, setUsers] = useState<User[]>([])
-    const [loading, setLoading] = useState(true)
-    const [page, setPage] = useState(1)
-    const [totalPages, setTotalPages] = useState(1)
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-    useEffect(() => {
-        const fetchUsers = async () => {
-            setLoading(true)
-            try {
-                const res = await fetch(`/api/admin/users?page=${page}&limit=10`)
-                if (res.ok) {
-                    const data = await res.json()
-                    setUsers(data.users)
-                    setTotalPages(data.pagination.totalPages)
-                }
-            } catch (error) {
-                console.error("Failed to fetch users", error)
-            } finally {
-                setLoading(false)
-            }
-        }
-        fetchUsers()
-    }, [page])
+export default function AdminUsersPage() {
+    const [page, setPage] = useState(1)
+
+    const { data, error, isLoading } = useSWR(`/api/admin/users?page=${page}&limit=10`, fetcher, {
+        revalidateOnFocus: false
+    })
+
+    const users: User[] = data?.users || []
+    const totalPages = data?.pagination?.totalPages || 1
 
     return (
         <div className="space-y-6">
@@ -79,7 +67,7 @@ export default function AdminUsersPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
-                            {loading ? (
+                            {isLoading ? (
                                 Array.from({ length: 5 }).map((_, i) => (
                                     <tr key={i}>
                                         <td className="px-6 py-4"><Skeleton className="h-10 w-40" /></td>
@@ -146,7 +134,7 @@ export default function AdminUsersPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => setPage(p => Math.max(1, p - 1))}
-                            disabled={page === 1 || loading}
+                            disabled={page === 1 || isLoading}
                         >
                             Previous
                         </Button>
@@ -154,7 +142,7 @@ export default function AdminUsersPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                            disabled={page === totalPages || loading}
+                            disabled={page === totalPages || isLoading}
                         >
                             Next
                         </Button>

@@ -2,10 +2,11 @@
 
 import { GlassCard } from "@/components/ui/glass-card"
 import { ShoppingBag, Search, Filter, MoreHorizontal } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import useSWR from "swr"
 
 interface Order {
     id: string
@@ -19,30 +20,17 @@ interface Order {
     created_at: string
 }
 
-export default function AdminOrdersPage() {
-    const [orders, setOrders] = useState<Order[]>([])
-    const [loading, setLoading] = useState(true)
-    const [page, setPage] = useState(1)
-    const [totalPages, setTotalPages] = useState(1)
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-    useEffect(() => {
-        const fetchOrders = async () => {
-            setLoading(true)
-            try {
-                const res = await fetch(`/api/admin/orders?page=${page}&limit=10`)
-                if (res.ok) {
-                    const data = await res.json()
-                    setOrders(data.orders)
-                    setTotalPages(data.pagination.totalPages)
-                }
-            } catch (error) {
-                console.error("Failed to fetch orders", error)
-            } finally {
-                setLoading(false)
-            }
-        }
-        fetchOrders()
-    }, [page])
+export default function AdminOrdersPage() {
+    const [page, setPage] = useState(1)
+
+    const { data, error, isLoading } = useSWR(`/api/admin/orders?page=${page}&limit=10`, fetcher, {
+        revalidateOnFocus: false
+    })
+
+    const orders: Order[] = data?.orders || []
+    const totalPages = data?.pagination?.totalPages || 1
 
     return (
         <div className="space-y-6">
@@ -83,7 +71,7 @@ export default function AdminOrdersPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
-                            {loading ? (
+                            {isLoading ? (
                                 Array.from({ length: 5 }).map((_, i) => (
                                     <tr key={i}>
                                         <td className="px-6 py-4"><Skeleton className="h-4 w-24" /></td>
@@ -147,7 +135,7 @@ export default function AdminOrdersPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => setPage(p => Math.max(1, p - 1))}
-                            disabled={page === 1 || loading}
+                            disabled={page === 1 || isLoading}
                         >
                             Previous
                         </Button>
@@ -155,7 +143,7 @@ export default function AdminOrdersPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                            disabled={page === totalPages || loading}
+                            disabled={page === totalPages || isLoading}
                         >
                             Next
                         </Button>
