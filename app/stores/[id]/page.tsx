@@ -81,23 +81,55 @@ export default function StoreDetailPage() {
                     return
                 }
 
-                const response = await fetch(`/api/pricing?provider=${config.provider}`)
-                const data = await response.json()
+                const CACHE_KEY = `pricing_cache_${config.provider}`
+                const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
 
-                if (data.success) {
-                    let filteredPackages = data.data
+                const processData = (rawData: PricingPackage[]) => {
+                    let filteredPackages = rawData
 
                     if (storeId === 'airteltigo-ishare') {
-                        filteredPackages = data.data.filter((pkg: PricingPackage) =>
+                        filteredPackages = rawData.filter((pkg: PricingPackage) =>
                             pkg.name.toLowerCase().includes('ishare')
                         )
                     } else if (storeId === 'airteltigo-bigtime') {
-                        filteredPackages = data.data.filter((pkg: PricingPackage) =>
+                        filteredPackages = rawData.filter((pkg: PricingPackage) =>
                             pkg.name.toLowerCase().includes('bigtime')
                         )
                     }
 
                     setPackages(filteredPackages)
+                }
+
+                // Check cache
+                const cached = localStorage.getItem(CACHE_KEY)
+                if (cached) {
+                    try {
+                        const { timestamp, data } = JSON.parse(cached)
+                        // Check if cache is valid (less than 24 hours old)
+                        if (Date.now() - timestamp < CACHE_DURATION) {
+                            console.log(`Using cached data for ${config.provider}`)
+                            processData(data)
+                            setLoading(false)
+                            // Optional: Background refresh if cache is stale but usable? 
+                            // User asked for "only fetch fresh data every 24 hours", so strict cache is fine.
+                            return
+                        }
+                    } catch (e) {
+                        console.error("Error parsing cache", e)
+                        localStorage.removeItem(CACHE_KEY)
+                    }
+                }
+
+                const response = await fetch(`/api/pricing?provider=${config.provider}`)
+                const data = await response.json()
+
+                if (data.success) {
+                    // Update cache
+                    localStorage.setItem(CACHE_KEY, JSON.stringify({
+                        timestamp: Date.now(),
+                        data: data.data
+                    }))
+                    processData(data.data)
                 }
             } catch (error) {
                 console.error('Failed to fetch packages:', error)

@@ -30,8 +30,8 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{greeting}, {user?.name?.split(' ')[0] || 'User'}!</h1>
-          <p className="text-muted-foreground">Here's what's happening with your account today.</p>
+          <h1 className="text-xl font-bold tracking-tight">{greeting}, {user?.name?.split(' ')[0] || 'User'}!</h1>
+          {/* <p className="text-muted-foreground">Here's what's happening with your account today.</p> */}
         </div>
         <Button className="rounded-full shadow-lg bg-blue-600 hover:bg-blue-700" asChild>
           <Link href="/store">
