@@ -5,9 +5,21 @@ import { useAuth } from "@/contexts/auth-context"
 import { GlassCard } from "@/components/ui/glass-card"
 import { Wallet, ShoppingBag, ArrowUpRight, Plus, History } from "lucide-react"
 import Link from "next/link"
+import useSWR from "swr"
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function DashboardPage() {
   const { user } = useAuth()
+
+  // Fetch real-time wallet balance
+  const { data: walletData } = useSWR(
+    user ? `/api/user/wallet?userId=${user.id}` : null,
+    fetcher,
+    {
+      refreshInterval: 30000, // Refresh every 30 seconds
+    }
+  )
 
   // Get time of day greeting
   const hour = new Date().getHours()
@@ -37,7 +49,7 @@ export default function DashboardPage() {
             <Wallet className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </div>
           <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">
-            GHS {user?.wallet_balance?.toFixed(2) || '0.00'}
+            GHS {walletData?.balance?.toFixed(2) || '0.00'}
           </div>
           <Link href="/dashboard/wallet">
             <Button variant="link" className="px-0 h-auto text-xs text-blue-600 dark:text-blue-400">

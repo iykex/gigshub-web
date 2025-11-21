@@ -26,17 +26,17 @@ export function FloatingWhatsAppWrapper() {
                     /* Mobile-specific styles for WhatsApp button */
                     @media (max-width: 768px) {
                         .whatsapp-mobile-wrapper [class*="FloatingWhatsApp"] {
-                            bottom: 120px !important;
+                            bottom: 130px !important;
                         }
                         
                         .whatsapp-mobile-wrapper button[class*="FloatingWhatsApp"] {
-                            width: 50px !important;
-                            height: 50px !important;
+                            width: 40px !important;
+                            height: 40px !important;
                         }
                         
                         .whatsapp-mobile-wrapper button[class*="FloatingWhatsApp"] svg {
-                            width: 28px !important;
-                            height: 28px !important;
+                            width: 20px !important;
+                            height: 20px !important;
                         }
                     }
                 `

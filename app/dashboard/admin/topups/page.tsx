@@ -78,7 +78,8 @@ export default function AdminTopupsPage() {
                 </p>
             </div>
 
-            <GlassCard className="p-0 overflow-hidden">
+            {/* Desktop Table */}
+            <GlassCard className="hidden md:block p-0 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-muted/50 text-muted-foreground font-medium">
@@ -169,32 +170,109 @@ export default function AdminTopupsPage() {
                         </tbody>
                     </table>
                 </div>
-
-                {/* Pagination */}
-                <div className="p-4 border-t flex items-center justify-between">
-                    <div className="text-xs text-muted-foreground">
-                        Page {page} of {totalPages}
-                    </div>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPage(p => Math.max(1, p - 1))}
-                            disabled={page === 1 || isLoading}
-                        >
-                            Previous
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                            disabled={page === totalPages || isLoading}
-                        >
-                            Next
-                        </Button>
-                    </div>
-                </div>
             </GlassCard>
+
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-4">
+                {isLoading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                        <GlassCard key={i} className="p-4">
+                            <div className="flex justify-between mb-4">
+                                <Skeleton className="h-4 w-24" />
+                                <Skeleton className="h-6 w-20" />
+                            </div>
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-full" />
+                            </div>
+                        </GlassCard>
+                    ))
+                ) : topups.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-8">No topup requests found.</div>
+                ) : (
+                    topups.map((topup) => (
+                        <GlassCard key={topup.id} className="p-4">
+                            <div className="flex items-start justify-between mb-4">
+                                <div>
+                                    <div className="font-mono text-xs text-muted-foreground mb-1">{topup.reference}</div>
+                                    <div className="font-medium">GHS {topup.amount?.toFixed(2)}</div>
+                                </div>
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
+                                    ${topup.status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                        topup.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                                            topup.status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                                                'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'}`}>
+                                    {topup.status}
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                                <div>
+                                    <p className="text-muted-foreground text-xs">User</p>
+                                    <p className="font-medium mt-1">{topup.user_name || 'Unknown'}</p>
+                                    <p className="text-xs text-muted-foreground">{topup.user_email}</p>
+                                </div>
+                                <div>
+                                    <p className="text-muted-foreground text-xs">Method</p>
+                                    <p className="mt-1">{topup.payment_method}</p>
+                                </div>
+                                <div>
+                                    <p className="text-muted-foreground text-xs">Date</p>
+                                    <p className="mt-1">{new Date(topup.created_at).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            {topup.status === 'pending' && (
+                                <div className="flex justify-end gap-2 border-t pt-3">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
+                                        onClick={() => handleAction(topup.id, 'approve')}
+                                        disabled={!!processingId}
+                                    >
+                                        {processingId === topup.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+                                        Approve
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                        onClick={() => handleAction(topup.id, 'reject')}
+                                        disabled={!!processingId}
+                                    >
+                                        {processingId === topup.id ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <X className="h-4 w-4 mr-2" />}
+                                        Reject
+                                    </Button>
+                                </div>
+                            )}
+                        </GlassCard>
+                    ))
+                )}
+            </div>
+
+            {/* Pagination */}
+            <div className="flex items-center justify-between pt-4">
+                <div className="text-xs text-muted-foreground">
+                    Page {page} of {totalPages}
+                </div>
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                        disabled={page === 1 || isLoading}
+                    >
+                        Previous
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                        disabled={page === totalPages || isLoading}
+                    >
+                        Next
+                    </Button>
+                </div>
+            </div>
         </div>
     )
 }

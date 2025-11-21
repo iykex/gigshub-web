@@ -19,6 +19,7 @@ interface AuthContextType {
   signup: (email: string, password: string, username?: string, phone?: string) => Promise<void>
   signOut: () => Promise<void>
   sendPasswordResetEmail: (email: string) => Promise<void>
+  updateUser: (userData: Partial<User>) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -100,8 +101,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log("Sending password reset email to", email)
   }
 
+  const updateUser = (userData: Partial<User>) => {
+    if (!user) return
+
+    const updatedUser = { ...user, ...userData }
+    setUser(updatedUser)
+    localStorage.setItem('user', JSON.stringify(updatedUser))
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, signOut, sendPasswordResetEmail }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, signOut, sendPasswordResetEmail, updateUser }}>
       {children}
     </AuthContext.Provider>
   )

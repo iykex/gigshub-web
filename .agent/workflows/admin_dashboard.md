@@ -19,11 +19,18 @@ This workflow describes how to manage the Admin Dashboard modules.
 
 ### 1. User Management (`/dashboard/admin/users`)
 - **View Users**: See a list of all registered users and agents.
-- **Search**: Filter users by name or email (client-side filtering currently).
+- **Search**: Filter users by name, email, or phone (server-side).
+- **Actions**:
+    - **Edit Role**: Change a user's role (Guest, User, Agent, Admin).
+    - **Ban User**: (Coming soon).
 - **Pagination**: Navigate through pages of users.
 
 ### 2. Order Management (`/dashboard/admin/orders`)
 - **View Orders**: See all customer orders.
+- **Search**: Filter orders by ID, customer name/email, or product name (server-side).
+- **Actions**:
+    - **Mark Success**: Manually mark an order as successful.
+    - **Mark Failed**: Manually mark an order as failed.
 - **Status**: Monitor order status (pending, success, failed).
 
 ### 3. Wallet Topups (`/dashboard/admin/topups`)
