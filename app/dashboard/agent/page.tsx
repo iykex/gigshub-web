@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { GlassCard } from "@/components/ui/glass-card"
 import { Wallet, TrendingUp, History, Plus } from 'lucide-react'
+import { ChangePasswordForm } from "@/components/auth/change-password-form"
 
 export default function AgentDashboard() {
   return (
@@ -87,6 +88,12 @@ export default function AgentDashboard() {
               </table>
             </div>
           </GlassCard>
+        </div>
+
+        {/* Settings Section */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Account Settings</h2>
+          <ChangePasswordForm />
         </div>
       </div>
     </div>

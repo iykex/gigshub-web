@@ -18,19 +18,12 @@ export default function AgentRegisterPage() {
     const [formData, setFormData] = useState({
         name: "",
         email: "",
-        phone: "",
-        password: "",
-        confirmPassword: ""
+        phone: ""
     })
+    const [generatedPassword, setGeneratedPassword] = useState<string | null>(null)
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-
-        if (formData.password !== formData.confirmPassword) {
-            toast({ title: "Passwords do not match", variant: "destructive" })
-            return
-        }
-
         setLoading(true)
         try {
             const response = await fetch('/api/auth/signup', {
@@ -38,7 +31,6 @@ export default function AgentRegisterPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     email: formData.email,
-                    password: formData.password,
                     username: formData.name,
                     phone: formData.phone,
                     role: 'agent'
@@ -50,8 +42,15 @@ export default function AgentRegisterPage() {
                 throw new Error(error.error || 'Registration failed')
             }
 
-            toast({ title: "Agent registration successful! Please pay the activation fee." })
-            router.push("/agent/payment")
+            const data = await response.json()
+
+            if (data.generatedPassword) {
+                setGeneratedPassword(data.generatedPassword)
+                toast({ title: "Registration successful!" })
+            } else {
+                // Fallback if no password returned (shouldn't happen for agents)
+                router.push("/agent/payment")
+            }
         } catch (error) {
             toast({
                 title: "Registration failed",
@@ -61,6 +60,17 @@ export default function AgentRegisterPage() {
         } finally {
             setLoading(false)
         }
+    }
+
+    const handleCopyPassword = () => {
+        if (generatedPassword) {
+            navigator.clipboard.writeText(generatedPassword)
+            toast({ title: "Password copied to clipboard" })
+        }
+    }
+
+    const handleContinue = () => {
+        router.push("/agent/payment")
     }
 
     return (
@@ -170,29 +180,6 @@ export default function AgentRegisterPage() {
                                     />
                                 </div>
 
-                                <div className="grid md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="password">Password</Label>
-                                        <Input
-                                            id="password"
-                                            type="password"
-                                            required
-                                            value={formData.password}
-                                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="confirmPassword">Confirm Password</Label>
-                                        <Input
-                                            id="confirmPassword"
-                                            type="password"
-                                            required
-                                            value={formData.confirmPassword}
-                                            onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-
                                 <Button type="submit" className="w-full" disabled={loading}>
                                     {loading ? "Processing..." : "Register as Agent"}
                                 </Button>
@@ -202,6 +189,41 @@ export default function AgentRegisterPage() {
                 </div>
                 <Footer />
             </div>
+
+            {/* Success Modal */}
+            {generatedPassword && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl max-w-md w-full p-6 border border-gray-200 dark:border-gray-800">
+                        <div className="text-center mb-6">
+                            <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+                            </div>
+                            <h3 className="text-xl font-bold mb-2">Registration Successful!</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Your agent account has been created. Please save your temporary password below.
+                            </p>
+                        </div>
+
+                        <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg mb-6 flex items-center justify-between">
+                            <code className="text-lg font-mono font-bold text-blue-600 dark:text-blue-400">
+                                {generatedPassword}
+                            </code>
+                            <Button variant="ghost" size="sm" onClick={handleCopyPassword}>
+                                Copy
+                            </Button>
+                        </div>
+
+                        <div className="space-y-3">
+                            <p className="text-xs text-center text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-900/20 p-2 rounded">
+                                ⚠️ Important: You must change this password after your first login.
+                            </p>
+                            <Button onClick={handleContinue} className="w-full">
+                                Continue to Payment
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
