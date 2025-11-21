@@ -153,13 +153,13 @@ export default function HomePageClient() {
               <p className="text-sm sm:text-base md:text-lg text-gray-600 dark:text-gray-300 max-w-xl mx-auto md:mx-0 mt-4 mb-8">
                 Get your data bundles, AFA Registration, and more in minutes with secure payments and 24/7 support.
               </p>
-
+              {/* 
               <div className="md:hidden mt-8">
                 <DataPurchaseCard />
               </div>
               <div className="hidden md:block mt-8">
                 <DataPurchaseCard />
-              </div>
+              </div> */}
             </motion.div>
 
             {/* Right Column */}
