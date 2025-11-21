@@ -63,6 +63,42 @@ CREATE TABLE IF NOT EXISTS wallet_ledger (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- User Passwords table
+CREATE TABLE IF NOT EXISTS user_passwords (
+    user_id TEXT PRIMARY KEY,
+    password_hash TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Topup Requests table (for manual admin approval)
+CREATE TABLE IF NOT EXISTS topup_requests (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    amount REAL,
+    reference TEXT,
+    payment_method TEXT,
+    status TEXT CHECK(status IN ('pending','approved','rejected')) DEFAULT 'pending',
+    admin_note TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Agent Validations table
+CREATE TABLE IF NOT EXISTS agent_validations (
+    id TEXT PRIMARY KEY,
+    user_id TEXT,
+    business_name TEXT,
+    business_registration_number TEXT,
+    id_card_url TEXT,
+    status TEXT CHECK(status IN ('pending','approved','rejected')) DEFAULT 'pending',
+    admin_note TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
 -- Indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_pricing_provider ON pricing(provider);
 CREATE INDEX IF NOT EXISTS idx_pricing_product_code ON pricing(product_code);
@@ -73,3 +109,5 @@ CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
 CREATE INDEX IF NOT EXISTS idx_wallet_ledger_user_id ON wallet_ledger(user_id);
 CREATE INDEX IF NOT EXISTS idx_wallet_ledger_type ON wallet_ledger(type);
 CREATE INDEX IF NOT EXISTS idx_wallet_ledger_created_at ON wallet_ledger(created_at);
+CREATE INDEX IF NOT EXISTS idx_topup_requests_status ON topup_requests(status);
+CREATE INDEX IF NOT EXISTS idx_agent_validations_status ON agent_validations(status);
