@@ -20,7 +20,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
             <CheckCircle2 className="w-12 h-12" />
           </div>
         </div>
-        
+
         <div className="space-y-2">
           <h1 className="text-2xl font-bold">Payment Successful!</h1>
           <p className="text-muted-foreground">
@@ -35,7 +35,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
 
         <div className="flex flex-col gap-3 pt-4">
           <Button className="w-full rounded-full" asChild>
-            <Link href="/store">
+            <Link href="/stores">
               <ShoppingBag className="mr-2 h-4 w-4" />
               Buy More Data
             </Link>

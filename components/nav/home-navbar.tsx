@@ -2,13 +2,14 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { Menu, X, ChevronRight, LogOut, User, LayoutDashboard } from 'lucide-react'
+import { Menu, X, ChevronRight, LogOut, User, LayoutDashboard, ShoppingCart } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { motion, AnimatePresence } from "framer-motion"
+import { useCart } from "@/contexts/cart-context"
 
 const MotionLink = motion(Link)
 
@@ -228,6 +229,70 @@ function AuthButton({ isMobile = false, onClose }: { isMobile?: boolean, onClose
   )
 }
 
+function CartButton({ isMobile = false, onClose }: { isMobile?: boolean, onClose?: () => void }) {
+  const { totalItems } = useCart()
+  const router = useRouter()
+
+  if (isMobile) {
+    return (
+      <MotionLink
+        href="/checkout"
+        onClick={onClose}
+        whileTap={{ scale: 0.97 }}
+        className="block"
+      >
+        <div
+          className="flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-medium"
+          style={{
+            background: 'rgba(120, 120, 128, 0.05)',
+            border: '1px solid rgba(120, 120, 128, 0.1)',
+          }}
+        >
+          <span className="text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <ShoppingCart className="w-4 h-4" />
+            Cart
+            {totalItems > 0 && (
+              <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-bold bg-[#0077BE] text-white">
+                {totalItems}
+              </span>
+            )}
+          </span>
+          <ChevronRight className="w-4 h-4 text-gray-400" />
+        </div>
+      </MotionLink>
+    )
+  }
+
+  return (
+    <Link href="/checkout">
+      <motion.div
+        whileTap={{ scale: 0.95 }}
+        className="relative p-2 rounded-full text-sm font-medium overflow-hidden group"
+        style={{
+          background: 'rgba(120, 120, 128, 0.05)',
+          border: '1px solid rgba(120, 120, 128, 0.1)',
+        }}
+      >
+        <motion.div
+          whileHover={{ opacity: 1 }}
+          className="absolute inset-0 opacity-0"
+          style={{
+            background: 'rgba(120, 120, 128, 0.1)',
+          }}
+          transition={{ duration: 0.2 }}
+        />
+        <div className="relative z-10 flex items-center justify-center">
+          <ShoppingCart className="w-5 h-5 text-gray-700 dark:text-gray-200" />
+          {totalItems > 0 && (
+            <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold bg-[#0077BE] text-white border-2 border-white dark:border-[#0a0a0a]">
+              {totalItems}
+            </span>
+          )}
+        </div>
+      </motion.div>
+    </Link>
+  )
+}
 
 export function HomeNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -416,6 +481,11 @@ export function HomeNavbar() {
                   <ThemeToggle />
                 </div>
 
+                {/* Cart Button */}
+                <div className="ml-2">
+                  <CartButton />
+                </div>
+
                 {/* Auth Button */}
                 <div className="ml-2">
                   <AuthButton />
@@ -424,6 +494,7 @@ export function HomeNavbar() {
 
               {/* Mobile Menu Button & Theme Toggle */}
               <div className="flex items-center gap-2 md:hidden relative z-10">
+                <CartButton />
                 <ThemeToggle />
                 <motion.button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}

@@ -2,15 +2,17 @@
 
 import Link from "next/link"
 import { usePathname } from 'next/navigation'
-import { Home, Store, User, Settings, Menu, X, ChevronRight } from 'lucide-react'
+import { Home, Store, User, Settings, Menu, X, ChevronRight, ShoppingCart } from 'lucide-react'
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
 import { AnimatePresence, motion } from "framer-motion"
+import { useCart } from "@/contexts/cart-context"
 
 const MotionLink = motion(Link)
 
 export function MobileNav() {
   const pathname = usePathname()
+  const { totalItems } = useCart()
   const [isExpanded, setIsExpanded] = useState(false)
   const [lastScrollY, setLastScrollY] = useState(0)
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
@@ -60,7 +62,8 @@ export function MobileNav() {
 
   const links = [
     { href: "/", icon: Home, label: "Home", description: "Back to homepage" },
-    { href: "/store", icon: Store, label: "Store", description: "Browse products" },
+    { href: "/stores", icon: Store, label: "Stores", description: "Browse products" }, // Fixed href to /stores
+    { href: "/checkout", icon: ShoppingCart, label: "Cart", description: "View shopping cart" }, // Added Cart
     { href: "/dashboard/agent", icon: User, label: "Agent", description: "Agent dashboard" },
     { href: "/dashboard/admin", icon: Settings, label: "Admin", description: "Admin panel" },
   ]
@@ -162,6 +165,7 @@ export function MobileNav() {
                     const Icon = link.icon
                     const isActive = pathname === link.href
                     const isHovered = hoveredIndex === index
+                    const isCart = link.href === '/checkout'
 
                     return (
                       <MotionLink
@@ -220,6 +224,11 @@ export function MobileNav() {
                                 !isActive && "text-gray-600 dark:text-gray-400"
                               )}
                             />
+                            {isCart && totalItems > 0 && (
+                              <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-[#0077BE] text-white border-2 border-white dark:border-[#0a0a0a]">
+                                {totalItems}
+                              </span>
+                            )}
                           </div>
 
                           {/* Text content */}
@@ -342,6 +351,7 @@ export function MobileNav() {
                 {links.map((link, index) => {
                   const Icon = link.icon
                   const isActive = pathname === link.href
+                  const isCart = link.href === '/checkout'
 
                   return (
                     <MotionLink
@@ -375,13 +385,20 @@ export function MobileNav() {
                         />
                       )}
 
-                      <Icon
-                        className={cn(
-                          "w-5 h-5 relative z-10 transition-all duration-300",
-                          isActive && "text-[#0077BE] dark:text-[#4A9FD8]",
-                          !isActive && "text-gray-600 dark:text-gray-400"
+                      <div className="relative">
+                        <Icon
+                          className={cn(
+                            "w-5 h-5 relative z-10 transition-all duration-300",
+                            isActive && "text-[#0077BE] dark:text-[#4A9FD8]",
+                            !isActive && "text-gray-600 dark:text-gray-400"
+                          )}
+                        />
+                        {isCart && totalItems > 0 && (
+                          <span className="absolute -top-2 -right-2 flex items-center justify-center min-w-[16px] h-[16px] px-0.5 rounded-full text-[9px] font-bold bg-[#0077BE] text-white border border-white dark:border-[#0a0a0a] z-20">
+                            {totalItems}
+                          </span>
                         )}
-                      />
+                      </div>
                       <span className="sr-only">{link.label}</span>
                     </MotionLink>
                   )

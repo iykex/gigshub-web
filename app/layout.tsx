@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/contexts/auth-context"
+import { CartProvider } from "@/contexts/cart-context"
 import { Toaster } from "@/components/ui/toaster"
 import { MobileNav } from "@/components/nav/mobile-nav"
 import { FloatingWhatsAppWrapper } from "@/components/floating-whatsapp-wrapper"
@@ -58,9 +59,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            {children}
-            <MobileNav />
-            <FloatingWhatsAppWrapper />
+            <CartProvider>
+              {children}
+              <MobileNav />
+              <FloatingWhatsAppWrapper />
+            </CartProvider>
           </AuthProvider>
           <Toaster />
           <Analytics />
