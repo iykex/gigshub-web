@@ -1,17 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Database from 'better-sqlite3'
-import path from 'path'
+import { getDB } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 
 // Generate a simple UUID
 function generateId() {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-}
-
-// Get local D1 database for development
-function getLocalDB() {
-    const dbPath = path.join(process.cwd(), '.wrangler/state/v3/d1/miniflare-D1DatabaseObject', 'ae610cd37aebf51439f4d2f53a440c4cb6d1eb63cd18b3b251b21503c44a5c12.sqlite')
-    return new Database(dbPath)
 }
 
 export async function POST(request: NextRequest) {
@@ -35,14 +28,17 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Get the local database
-        const db = getLocalDB()
+        // Get the database instance
+        const db = getDB()
+
+        if (!db) {
+            throw new Error('Database connection failed')
+        }
 
         // Check if user already exists
-        const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(email)
+        const existingUser = await db.prepare('SELECT id FROM users WHERE email = ?').bind(email).first()
 
         if (existingUser) {
-            db.close()
             return NextResponse.json(
                 { error: 'User with this email already exists' },
                 { status: 409 }
@@ -56,10 +52,10 @@ export async function POST(request: NextRequest) {
         const userId = generateId()
         const now = new Date().toISOString()
 
-        db.prepare(
+        await db.prepare(
             `INSERT INTO users (id, name, phone, email, role, wallet_balance, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`
-        ).run(
+        ).bind(
             userId,
             username || null,
             phone || null,
@@ -67,11 +63,12 @@ export async function POST(request: NextRequest) {
             role,
             0,
             now
-        )
+        ).run()
 
         // Store password hash in a separate table
         try {
-            db.prepare(
+            // Create table if not exists (this should ideally be in migration, but keeping for safety)
+            await db.prepare(
                 `CREATE TABLE IF NOT EXISTS user_passwords (
           user_id TEXT PRIMARY KEY,
           password_hash TEXT NOT NULL,
@@ -79,15 +76,14 @@ export async function POST(request: NextRequest) {
         )`
             ).run()
 
-            db.prepare(
+            await db.prepare(
                 `INSERT INTO user_passwords (user_id, password_hash, created_at)
          VALUES (?, ?, ?)`
-            ).run(userId, hashedPassword, now)
+            ).bind(userId, hashedPassword, now).run()
         } catch (e) {
             console.error('Password storage error:', e)
+            // We might want to rollback user creation here in a real app
         }
-
-        db.close()
 
         // Return success (don't send password back)
         return NextResponse.json({

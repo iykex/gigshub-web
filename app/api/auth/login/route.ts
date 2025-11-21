@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Database from 'better-sqlite3'
-import path from 'path'
+import { getDB } from '@/lib/db'
 import bcrypt from 'bcryptjs'
-
-// Get local D1 database for development
-function getLocalDB() {
-    const dbPath = path.join(process.cwd(), '.wrangler/state/v3/d1/miniflare-D1DatabaseObject', 'ae610cd37aebf51439f4d2f53a440c4cb6d1eb63cd18b3b251b21503c44a5c12.sqlite')
-    return new Database(dbPath)
-}
 
 export async function POST(request: NextRequest) {
     try {
@@ -22,16 +15,19 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Get the local database
-        const db = getLocalDB()
+        // Get the database instance (works for both local and remote)
+        const db = getDB()
+
+        if (!db) {
+            throw new Error('Database connection failed')
+        }
 
         // Find user by email
-        const user: any = db.prepare(
+        const user = await db.prepare(
             'SELECT id, name, phone, email, role, wallet_balance, created_at FROM users WHERE email = ?'
-        ).get(email)
+        ).bind(email).first<any>()
 
         if (!user) {
-            db.close()
             return NextResponse.json(
                 { error: 'Invalid email or password' },
                 { status: 401 }
@@ -39,11 +35,9 @@ export async function POST(request: NextRequest) {
         }
 
         // Get password hash
-        const passwordRecord: any = db.prepare(
+        const passwordRecord = await db.prepare(
             'SELECT password_hash FROM user_passwords WHERE user_id = ?'
-        ).get(user.id)
-
-        db.close()
+        ).bind(user.id).first<any>()
 
         if (!passwordRecord) {
             return NextResponse.json(
