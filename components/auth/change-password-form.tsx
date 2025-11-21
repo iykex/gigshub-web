@@ -4,6 +4,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "@/hooks/use-toast"
@@ -79,9 +80,8 @@ export function ChangePasswordForm() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="currentPassword">Current Password</Label>
-                        <Input
+                        <PasswordInput
                             id="currentPassword"
-                            type="password"
                             required
                             value={formData.currentPassword}
                             onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
@@ -89,9 +89,8 @@ export function ChangePasswordForm() {
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="newPassword">New Password</Label>
-                        <Input
+                        <PasswordInput
                             id="newPassword"
-                            type="password"
                             required
                             value={formData.newPassword}
                             onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
@@ -99,9 +98,8 @@ export function ChangePasswordForm() {
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                        <Input
+                        <PasswordInput
                             id="confirmPassword"
-                            type="password"
                             required
                             value={formData.confirmPassword}
                             onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
