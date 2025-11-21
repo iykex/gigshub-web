@@ -34,7 +34,7 @@ export default function DashboardPage() {
           {/* <p className="text-muted-foreground">Here's what's happening with your account today.</p> */}
         </div>
         <Button className="rounded-full shadow-lg bg-blue-600 hover:bg-blue-700" asChild>
-          <Link href="/store">
+          <Link href="/stores">
             <Plus className="mr-2 h-4 w-4" />
             New Order
           </Link>
@@ -93,7 +93,7 @@ export default function DashboardPage() {
             <History className="w-12 h-12 mx-auto mb-3 opacity-20" />
             <p>No recent transactions found</p>
             <Button variant="link" asChild>
-              <Link href="/store">Make your first purchase</Link>
+              <Link href="/stores">Make your first purchase</Link>
             </Button>
           </div>
         </GlassCard>

@@ -39,7 +39,7 @@ export default function AgentDashboard() {
             <p className="text-muted-foreground">Manage your agent operations and track your performance.</p>
           </div>
           <Button className="rounded-full shadow-lg bg-blue-600 hover:bg-blue-700" asChild>
-            <Link href="/store">
+            <Link href="/stores">
               <Plus className="mr-2 h-4 w-4" />
               New Order
             </Link>
@@ -102,7 +102,7 @@ export default function AgentDashboard() {
                 <History className="w-12 h-12 mx-auto mb-3 opacity-20" />
                 <p>No recent orders found</p>
                 <Button variant="link" asChild className="mt-2">
-                  <Link href="/store">Start processing orders</Link>
+                  <Link href="/stores">Start processing orders</Link>
                 </Button>
               </div>
             ) : (

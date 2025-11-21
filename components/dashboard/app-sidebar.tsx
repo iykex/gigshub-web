@@ -144,10 +144,10 @@ export function AppSidebar() {
         return () => window.removeEventListener('resize', handleResize)
     }, [])
 
-    const NavContent = () => (
+    const NavContent = ({ collapsed }: { collapsed: boolean }) => (
         <div className="flex flex-col h-full">
-            <div className={cn("flex items-center h-12 mb-4", isCollapsed ? "justify-center" : "justify-between px-2")}>
-                {!isCollapsed && (
+            <div className={cn("flex items-center h-12 mb-4", collapsed ? "justify-center" : "justify-between px-2")}>
+                {!collapsed && (
                     <span className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
                         {isAdminPath ? 'Admin Panel' : isAgentPath ? 'Agent Panel' : 'Menu'}
                     </span>
@@ -173,14 +173,14 @@ export function AppSidebar() {
                             pathname === item.href || (item.href !== '/dashboard' && item.href !== '/dashboard/admin' && pathname.startsWith(item.href))
                                 ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 shadow-sm"
                                 : "text-muted-foreground",
-                            isCollapsed && "justify-center px-2"
+                            collapsed && "justify-center px-2"
                         )}
                     >
-                        <item.icon className={cn("w-5 h-5 shrink-0", isCollapsed ? "mr-0" : "mr-0")} />
-                        {!isCollapsed && <span>{item.title}</span>}
+                        <item.icon className={cn("w-5 h-5 shrink-0", collapsed ? "mr-0" : "mr-0")} />
+                        {!collapsed && <span>{item.title}</span>}
 
                         {/* Tooltip for collapsed state */}
-                        {isCollapsed && (
+                        {collapsed && (
                             <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
                                 {item.title}
                             </div>
@@ -195,12 +195,12 @@ export function AppSidebar() {
                         className={cn(
                             "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground mt-6 group relative",
                             "text-muted-foreground hover:text-blue-600",
-                            isCollapsed && "justify-center px-2"
+                            collapsed && "justify-center px-2"
                         )}
                     >
                         <ShieldCheck className="w-5 h-5 shrink-0" />
-                        {!isCollapsed && <span>Admin Dashboard</span>}
-                        {isCollapsed && (
+                        {!collapsed && <span>Admin Dashboard</span>}
+                        {collapsed && (
                             <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
                                 Admin Dashboard
                             </div>
@@ -215,12 +215,12 @@ export function AppSidebar() {
                         className={cn(
                             "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground mt-6 group relative",
                             "text-muted-foreground",
-                            isCollapsed && "justify-center px-2"
+                            collapsed && "justify-center px-2"
                         )}
                     >
                         <ChevronLeft className="w-5 h-5 shrink-0" />
-                        {!isCollapsed && <span>Back to Dashboard</span>}
-                        {isCollapsed && (
+                        {!collapsed && <span>Back to Dashboard</span>}
+                        {collapsed && (
                             <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
                                 Back to Dashboard
                             </div>
@@ -229,17 +229,17 @@ export function AppSidebar() {
                 )}
             </nav>
 
-            <div className={cn("mt-auto pt-4 border-t border-border", isCollapsed && "flex justify-center")}>
+            <div className={cn("mt-auto pt-4 border-t border-border", collapsed && "flex justify-center")}>
                 <button
                     onClick={() => signOut()}
                     className={cn(
                         "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all w-full group relative",
-                        isCollapsed && "justify-center px-2 w-auto"
+                        collapsed && "justify-center px-2 w-auto"
                     )}
                 >
                     <LogOut className="w-5 h-5 shrink-0" />
-                    {!isCollapsed && <span>Sign Out</span>}
-                    {isCollapsed && (
+                    {!collapsed && <span>Sign Out</span>}
+                    {collapsed && (
                         <div className="absolute left-full ml-2 px-2 py-1 bg-destructive text-destructive-foreground text-xs rounded shadow-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
                             Sign Out
                         </div>
@@ -260,13 +260,13 @@ export function AppSidebar() {
             >
                 <div className="sticky top-24">
                     <div className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-2xl p-4 shadow-sm">
-                        <NavContent />
+                        <NavContent collapsed={isCollapsed} />
                     </div>
                 </div>
             </aside>
 
             {/* Mobile Sidebar Trigger */}
-            <div className="lg:hidden fixed bottom-6 right-6 z-50">
+            <div className="lg:hidden fixed top-1/2 right-4 -translate-y-1/2 z-[100]">
                 <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
                     <SheetTrigger asChild>
                         <Button size="icon" className="h-14 w-14 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90">
@@ -275,7 +275,7 @@ export function AppSidebar() {
                     </SheetTrigger>
                     <SheetContent side="left" className="w-[300px] sm:w-[400px] p-6">
                         <div className="mt-6 h-full">
-                            <NavContent />
+                            <NavContent collapsed={false} />
                         </div>
                     </SheetContent>
                 </Sheet>
