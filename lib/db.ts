@@ -47,6 +47,15 @@ export function getDB(env?: any): D1Database | null {
     return process.env.DB as unknown as D1Database
   }
 
+  // Remote connection for Vercel/Production
+  if (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN && process.env.CLOUDFLARE_DATABASE_ID) {
+    return new RemoteD1Database(
+      process.env.CLOUDFLARE_ACCOUNT_ID,
+      process.env.CLOUDFLARE_DATABASE_ID,
+      process.env.CLOUDFLARE_API_TOKEN
+    )
+  }
+
   // Local development fallback using better-sqlite3
   if (process.env.NODE_ENV === 'development') {
     try {
@@ -64,6 +73,135 @@ export function getDB(env?: any): D1Database | null {
   }
 
   return null
+}
+
+// Remote D1 Adapter for Vercel/External access
+class RemoteD1Database implements D1Database {
+  private accountId: string
+  private databaseId: string
+  private apiToken: string
+  private baseUrl: string
+
+  constructor(accountId: string, databaseId: string, apiToken: string) {
+    this.accountId = accountId
+    this.databaseId = databaseId
+    this.apiToken = apiToken
+    this.baseUrl = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${databaseId}`
+  }
+
+  prepare(query: string): D1PreparedStatement {
+    return new RemoteD1PreparedStatement(query, this.baseUrl, this.apiToken)
+  }
+
+  async dump(): Promise<ArrayBuffer> {
+    throw new Error('Not implemented in remote adapter')
+  }
+
+  async batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]> {
+    // Note: This is a simplified implementation. True batching requires constructing a specific API payload.
+    // For now, we'll execute sequentially which is not atomic but works for basic needs.
+    const results: D1Result<T>[] = []
+    for (const stmt of statements) {
+      results.push(await stmt.all())
+    }
+    return results
+  }
+
+  async exec(query: string): Promise<D1ExecResult> {
+    const stmt = this.prepare(query)
+    const result = await stmt.run()
+    return {
+      count: result.meta.rows_written || 0,
+      duration: result.meta.duration || 0
+    }
+  }
+}
+
+class RemoteD1PreparedStatement implements D1PreparedStatement {
+  private query: string
+  private baseUrl: string
+  private apiToken: string
+  private bindings: any[] = []
+
+  constructor(query: string, baseUrl: string, apiToken: string) {
+    this.query = query
+    this.baseUrl = baseUrl
+    this.apiToken = apiToken
+  }
+
+  bind(...values: unknown[]): D1PreparedStatement {
+    this.bindings = values
+    return this
+  }
+
+  private async execute<T>(): Promise<D1Result<T>> {
+    try {
+      const response = await fetch(`${this.baseUrl}/query`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sql: this.query,
+          params: this.bindings
+        })
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`D1 API Error: ${response.status} ${response.statusText} - ${errorText}`)
+      }
+
+      const data = await response.json() as any
+
+      if (!data.success) {
+        throw new Error(data.errors?.[0]?.message || 'Unknown D1 error')
+      }
+
+      // D1 API returns an array of results, we usually just want the first one for a single query
+      const result = data.result[0]
+
+      return {
+        results: result.results as T[],
+        success: true,
+        meta: result.meta || { duration: 0, size_after: 0, rows_read: 0, rows_written: 0 }
+      }
+    } catch (e: any) {
+      console.error('D1 Remote Query Error:', e)
+      return {
+        success: false,
+        error: e.message,
+        meta: { duration: 0, size_after: 0, rows_read: 0, rows_written: 0 }
+      }
+    }
+  }
+
+  async first<T = unknown>(colName?: string): Promise<T | null> {
+    const result = await this.execute<any>()
+    if (!result.success || !result.results || result.results.length === 0) return null
+
+    const firstRow = result.results[0]
+    if (colName) return firstRow[colName] as T
+    return firstRow as T
+  }
+
+  async run<T = unknown>(): Promise<D1Result<T>> {
+    return this.execute<T>()
+  }
+
+  async all<T = unknown>(): Promise<D1Result<T>> {
+    return this.execute<T>()
+  }
+
+  async raw<T = unknown>(): Promise<T[]> {
+    const result = await this.execute<any>()
+    if (!result.success || !result.results) return []
+
+    // This is an approximation since raw() usually returns arrays of values
+    // but the HTTP API returns objects.
+    return result.results.map(row => Object.values(row)) as T[]
+  }
 }
 
 // Local D1 Adapter for development
