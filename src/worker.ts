@@ -969,6 +969,28 @@ app.get('/api/admin/afa-registrations', async (c) => {
         const offset = (page - 1) * limit
 
         const db = c.env.DB
+        if (!db) {
+            return c.json({ error: 'Database connection failed' }, 503)
+        }
+
+        // Ensure table exists
+        await db.prepare(`
+            CREATE TABLE IF NOT EXISTS afa_registrations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                full_name TEXT NOT NULL,
+                phone_number TEXT NOT NULL,
+                town TEXT NOT NULL,
+                occupation TEXT NOT NULL,
+                id_number TEXT NOT NULL,
+                id_type TEXT NOT NULL,
+                package_id INTEGER NOT NULL,
+                amount REAL NOT NULL,
+                payment_reference TEXT,
+                payment_status TEXT DEFAULT 'pending',
+                status TEXT DEFAULT 'pending',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `).run()
 
         let query = `
             SELECT * FROM afa_registrations
@@ -1046,6 +1068,25 @@ app.get('/api/afa/my-orders', async (c) => {
         if (!user) {
             return c.json({ error: 'User not found' }, 404)
         }
+
+        // Ensure table exists
+        await db.prepare(`
+            CREATE TABLE IF NOT EXISTS afa_registrations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                full_name TEXT NOT NULL,
+                phone_number TEXT NOT NULL,
+                town TEXT NOT NULL,
+                occupation TEXT NOT NULL,
+                id_number TEXT NOT NULL,
+                id_type TEXT NOT NULL,
+                package_id INTEGER NOT NULL,
+                amount REAL NOT NULL,
+                payment_reference TEXT,
+                payment_status TEXT DEFAULT 'pending',
+                status TEXT DEFAULT 'pending',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `).run()
 
         // Fetch AFA registrations for this user's phone number
         const registrations = await db.prepare(`
