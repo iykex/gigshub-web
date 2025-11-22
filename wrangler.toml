@@ -1,12 +1,23 @@
 name = "gigshub"
-main = "src/index.ts"
+main = "src/worker.ts"
 compatibility_date = "2023-10-30"
+compatibility_flags = ["nodejs_compat"]
+
+
+[vars]
+PAYSTACK_SECRET_KEY = "sk_test_a240e34e3c3907de996184fd987dadf9bff2f0ff"
 
 [[d1_databases]]
 binding = "DB" # i.e. available in your Worker on env.DB
 database_name = "gigshub-db"
 database_id = "5975a6ae-df3c-44c3-a1c7-25d3b497ce51"
+preview_database_id = "5975a6ae-df3c-44c3-a1c7-25d3b497ce51" # Use production DB for preview
+remote = true  # Use remote D1 database in development
 
 [dev]
 ip = "*"
 port = 8788
+
+[env.production]
+compatibility_flags = ["nodejs_compat"]
+limits = { cpu_ms = 30000 }  # For unbounded workers
