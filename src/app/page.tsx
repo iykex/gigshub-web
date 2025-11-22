@@ -70,7 +70,7 @@ export default function HomePageClient() {
         {/* Loader content */}
         <div className="relative z-10 text-center">
           {/* Logo or brand name */}
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
@@ -79,27 +79,31 @@ export default function HomePageClient() {
             <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               GiGSHUB
             </h2>
-          </motion.div>
+          </motion.div> */}
 
-          {/* Modern dot loader */}
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            {[0, 1, 2].map((index) => (
-              <motion.div
-                key={index}
-                className="w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
-                animate={{
-                  scale: [1, 1.5, 1],
-                  opacity: [0.5, 1, 0.5],
-                }}
-                transition={{
-                  duration: 1.2,
-                  repeat: Infinity,
-                  delay: index * 0.2,
-                  ease: "easeInOut",
-                }}
+          {/* Breathing Logo Loader */}
+          <motion.div
+            className="flex items-center justify-center mb-6"
+            animate={{
+              scale: [1, 1.1, 1],
+              opacity: [0.8, 1, 0.8],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          >
+            <div className="relative w-24 h-24 rounded-full overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 p-4 shadow-xl">
+              <img
+                src="/gigshub-logo.png"
+                alt="GiGSHUB Logo"
+                className="w-full h-full object-contain drop-shadow-lg"
               />
-            ))}
-          </div>
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-blue-300/20 blur-xl rounded-full animate-pulse" />
+            </div>
+          </motion.div>
 
           {/* Loading text */}
           <motion.p

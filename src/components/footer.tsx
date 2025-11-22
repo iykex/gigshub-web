@@ -23,12 +23,13 @@ export function Footer() {
             <Heart className="w-3 h-3 md:w-4 md:h-4 text-blue-500 fill-current" />
             <span>by</span>
             <a
-              href="https://www.aibsmart.com"
+              href="https://wa.me/233271612387?text=Hello%20AIB.Smart!%20I%27m%20interested%20in%20your%20services.%20Can%20you%20help%20me%3F"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-blue-600 hover:text-blue-700"
+              className="font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
             >
               AIB.Smart
+              <MessageCircle className="w-3 h-3 md:w-4 md:h-4" />
             </a>
           </p>
         </div>

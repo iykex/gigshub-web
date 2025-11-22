@@ -329,7 +329,7 @@ export function HomeNavbar() {
   const allNavLinks = [
     { href: '/', label: 'Home', public: true, requiresAuth: false },
     { href: '/stores', label: 'Stores', public: false, requiresAuth: true },
-    { href: '/agent/register', label: 'Agent Registration', public: false, requiresAuth: true, hideForAgent: true },
+    { href: '/agent/register', label: 'Agent Registration', public: false, requiresAuth: true, hideForAgentAndAdmin: true },
   ]
 
   const navLinks = allNavLinks.filter(link => {
@@ -339,8 +339,8 @@ export function HomeNavbar() {
     // Show auth-required links only to logged-in users
     if (link.requiresAuth && !user) return false;
 
-    // Hide Agent Registration if user is already an agent
-    if (link.hideForAgent && user?.role === 'agent') return false;
+    // Hide Agent Registration if user is already an agent or admin
+    if (link.hideForAgentAndAdmin && (user?.role === 'agent' || user?.role === 'admin')) return false;
 
     return true;
   })

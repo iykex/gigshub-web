@@ -122,7 +122,7 @@ export default function AdminOrdersPage() {
     }
 
     const OrderActionsDesktop = ({ order }: { order: Order }) => (
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" disabled={processingId === order.id}>
                     {processingId === order.id ? (
@@ -227,7 +227,7 @@ export default function AdminOrdersPage() {
             </Tabs>
 
             {/* Desktop Table */}
-            <GlassCard className="hidden md:block p-0 overflow-hidden">
+            <GlassCard className="hidden md:block p-0" hoverEffect={false}>
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-muted/50 text-muted-foreground font-medium">

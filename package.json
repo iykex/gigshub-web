@@ -6,7 +6,7 @@
   "scripts": {
     "start": "npm run dev",
     "dev": "vite",
-    "api:dev": "wrangler dev --port 8788",
+    "api:dev": "wrangler dev --port 8788 --remote",
     "build": "tsc && vite build",
     "lint": "eslint .",
     "preview": "vite preview",

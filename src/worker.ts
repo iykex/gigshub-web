@@ -715,10 +715,42 @@ app.post('/api/wallet/pay', async (c) => {
             .bind(amount, userId)
             .run()
 
-        // Record transaction (if you have a transactions table, which you should)
-        // await db.prepare('INSERT INTO transactions ...').run()
+        // Record transaction
+        const txId = generateId()
+        const now = new Date().toISOString()
+        const reference = `WALLET-${Date.now()}-${Math.floor(Math.random() * 1000)}`
 
-        return c.json({ success: true, message: 'Payment successful' })
+        // Create transactions table if not exists
+        await db.prepare(`
+            CREATE TABLE IF NOT EXISTS transactions (
+                id TEXT PRIMARY KEY,
+                user_id TEXT,
+                reference TEXT UNIQUE,
+                amount REAL,
+                status TEXT,
+                type TEXT,
+                provider TEXT,
+                description TEXT,
+                created_at TEXT
+            )
+        `).run()
+
+        await db.prepare(`
+            INSERT INTO transactions (id, user_id, reference, amount, status, type, provider, description, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+            txId,
+            userId,
+            reference,
+            amount,
+            'pending', // Orders start as pending until fulfilled
+            'purchase',
+            'wallet',
+            description || 'Wallet Purchase',
+            now
+        ).run()
+
+        return c.json({ success: true, message: 'Payment successful', reference })
     } catch (error) {
         console.error('Wallet payment error:', error)
         return c.json({ error: 'Wallet payment failed' }, 500)
@@ -761,6 +793,75 @@ app.put('/api/admin/users/:id', async (c) => {
         return c.json({ success: true })
     } catch (error) {
         return c.json({ error: 'Failed to update user' }, 500)
+    }
+})
+
+// Admin: Get All Orders
+app.get('/api/admin/orders', async (c) => {
+    try {
+        const page = parseInt(c.req.query('page') || '1')
+        const limit = parseInt(c.req.query('limit') || '20')
+        const search = c.req.query('search') || ''
+        const offset = (page - 1) * limit
+
+        const db = c.env.DB
+
+        let query = `
+            SELECT 
+                t.id, 
+                t.reference, 
+                t.amount, 
+                t.status, 
+                t.created_at, 
+                t.description as product_name,
+                u.name as user_name, 
+                u.email as user_email 
+            FROM transactions t
+            LEFT JOIN users u ON t.user_id = u.id
+            WHERE t.type IN ('purchase', 'payment')
+        `
+
+        let countQuery = `
+            SELECT COUNT(*) as count 
+            FROM transactions t
+            LEFT JOIN users u ON t.user_id = u.id
+            WHERE t.type IN ('purchase', 'payment')
+        `
+
+        const params: any[] = []
+
+        if (search) {
+            const searchCondition = ` AND (t.reference LIKE ? OR u.name LIKE ? OR u.email LIKE ? OR t.description LIKE ?)`
+            query += searchCondition
+            countQuery += searchCondition
+            const searchParam = `%${search}%`
+            params.push(searchParam, searchParam, searchParam, searchParam)
+        }
+
+        query += ' ORDER BY t.created_at DESC LIMIT ? OFFSET ?'
+        params.push(limit, offset)
+
+        const orders = await db.prepare(query)
+            .bind(...params)
+            .all()
+
+        // For count, we need to bind search params only
+        const countParams = search ? [params[0], params[1], params[2], params[3]] : []
+        const total = await db.prepare(countQuery).bind(...countParams).first<{ count: number }>()
+
+        return c.json({
+            orders: orders.results,
+            pagination: {
+                page,
+                limit,
+                total: total?.count || 0,
+                totalPages: Math.ceil((total?.count || 0) / limit)
+            }
+        })
+
+    } catch (error) {
+        console.error('Admin Orders Error:', error)
+        return c.json({ error: 'Internal server error' }, 500)
     }
 })
 
@@ -934,82 +1035,6 @@ app.post('/api/admin/topups/action', async (c) => {
 
 // Admin: Stats
 // Admin: Get Orders
-app.get('/api/admin/orders', async (c) => {
-    try {
-        const db = c.env.DB
-        const page = parseInt(c.req.query('page') || '1')
-        const limit = parseInt(c.req.query('limit') || '10')
-        const search = c.req.query('search') || ''
-        const status = c.req.query('status') || 'all'
-        const offset = (page - 1) * limit
-
-        let query = `
-            SELECT t.*, u.name as user_name, u.email as user_email, u.phone as user_phone
-            FROM transactions t 
-            LEFT JOIN users u ON t.user_id = u.id 
-            WHERE (t.type = 'purchase' OR t.type = 'payment')
-        `
-
-        const params: any[] = []
-
-        if (status && status !== 'all') {
-            query += ` AND t.status = ?`
-            params.push(status)
-        }
-
-        if (search) {
-            query += ` AND (t.id LIKE ? OR u.email LIKE ? OR u.name LIKE ?)`
-            params.push(`%${search}%`, `%${search}%`, `%${search}%`)
-        }
-
-        query += ` ORDER BY t.created_at DESC LIMIT ? OFFSET ?`
-        params.push(limit, offset)
-
-        const result = await db.prepare(query).bind(...params).all()
-
-        // Get total count for pagination
-        let countQuery = `
-            SELECT COUNT(*) as total 
-            FROM transactions t 
-            LEFT JOIN users u ON t.user_id = u.id 
-            WHERE (t.type = 'purchase' OR t.type = 'payment')
-        `
-        const countParams: any[] = []
-
-        if (status && status !== 'all') {
-            countQuery += ` AND t.status = ?`
-            countParams.push(status)
-        }
-
-        if (search) {
-            countQuery += ` AND (t.id LIKE ? OR u.email LIKE ? OR u.name LIKE ?)`
-            countParams.push(`%${search}%`, `%${search}%`, `%${search}%`)
-        }
-
-        const count = await db.prepare(countQuery).bind(...countParams).first<any>()
-
-        return c.json({
-            orders: result.results.map((r: any) => ({
-                id: r.id,
-                user_id: r.user_id,
-                user_name: r.user_name,
-                user_email: r.user_email,
-                phone: r.user_phone,
-                product_name: r.description,
-                amount: r.amount,
-                status: r.status,
-                created_at: r.created_at,
-                provider: r.provider
-            })),
-            pagination: {
-                totalPages: Math.ceil((count?.total || 0) / limit)
-            }
-        })
-    } catch (error) {
-        console.error('Fetch orders error:', error)
-        return c.json({ error: 'Failed to fetch orders' }, 500)
-    }
-})
 
 // Admin: Order Action
 app.post('/api/admin/orders/action', async (c) => {

@@ -23,7 +23,7 @@ export default function LoginPage() {
     try {
       await login(email, password)
       toast({ title: "Login successful!" })
-      navigate("/dashboard")
+      navigate("/stores")
     } catch (error) {
       toast({
         title: "Login failed",
