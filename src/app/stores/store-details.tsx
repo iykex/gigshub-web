@@ -148,6 +148,12 @@ export default function StoreDetailPage() {
     }
 
     const handleAddToCart = (pkg: PricingPackage) => {
+        // For AFA packages, redirect to registration form
+        if (pkg.provider.toLowerCase() === 'afa' || pkg.provider.toLowerCase().includes('afa')) {
+            navigate('/stores/afa-registration')
+            return
+        }
+
         setSelectedPackage(pkg)
         setRecipientPhone("")
         setIsPhoneDialogOpen(true)

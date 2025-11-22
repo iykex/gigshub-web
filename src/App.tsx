@@ -30,6 +30,7 @@ import AgentDashboard from "@/app/dashboard/agent/page";
 import AgentRegisterPage from "@/app/agent/register/page";
 
 import AdminOrders from "@/app/dashboard/admin/orders/page";
+import AdminAfa from "@/app/dashboard/admin/afa/page";
 import AdminTopups from "@/app/dashboard/admin/topups/page";
 import AdminValidations from "@/app/dashboard/admin/validations/page";
 import AdminStore from "@/app/dashboard/admin/store/page";
@@ -39,6 +40,7 @@ import AgentOrders from "@/app/dashboard/agent/orders/page";
 import AgentProfile from "@/app/dashboard/agent/profile/page";
 import AgentSettings from "@/app/dashboard/agent/settings/page";
 import AgentWallet from "@/app/dashboard/agent/wallet/page";
+import AfaRegisterPage from "@/app/afa/register/page";
 
 export default function App() {
     return (
@@ -73,6 +75,7 @@ export default function App() {
                                     <Route index element={<AdminDashboard />} />
                                     <Route path="users" element={<AdminUsers />} />
                                     <Route path="orders" element={<AdminOrders />} />
+                                    <Route path="afa" element={<AdminAfa />} />
                                     <Route path="topups" element={<AdminTopups />} />
                                     <Route path="validations" element={<AdminValidations />} />
                                     <Route path="stores" element={<AdminStore />} />
@@ -87,6 +90,7 @@ export default function App() {
                             <Route path="/wallet/topup" element={<WalletTopup />} />
                             <Route path="/forgot-password" element={<ForgotPassword />} />
                             <Route path="/agent/register" element={<AgentRegisterPage />} />
+                            <Route path="/stores/afa-registration" element={<AfaRegisterPage />} />
                             <Route path="/agent/dashboard" element={<Navigate to="/dashboard/agent" replace />} />
                         </Routes>
                         <MobileNav />

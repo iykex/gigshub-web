@@ -71,6 +71,28 @@ export default function SuccessPage() {
             origin: { y: 0.6 }
           })
 
+          // Check if this is an AFA registration payment
+          const afaData = sessionStorage.getItem('afa_registration_data')
+          if (afaData) {
+            try {
+              const registrationData = JSON.parse(afaData)
+              // Submit AFA registration to backend
+              await fetch('/api/afa/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  ...registrationData,
+                  paymentReference: reference,
+                  paymentStatus: 'paid'
+                })
+              })
+              // Clear the stored data
+              sessionStorage.removeItem('afa_registration_data')
+            } catch (error) {
+              console.error('Failed to submit AFA registration:', error)
+            }
+          }
+
           toast({
             title: "Payment Verified 🎉",
             description: "Your transaction has been confirmed.",

@@ -799,6 +799,11 @@ app.put('/api/admin/users/:id', async (c) => {
 // Admin: Get All Orders
 app.get('/api/admin/orders', async (c) => {
     try {
+        console.log('📦 Admin Orders Request:', {
+            query: c.req.query(),
+            url: c.req.url
+        })
+
         const page = parseInt(c.req.query('page') || '1')
         const limit = parseInt(c.req.query('limit') || '20')
         const search = c.req.query('search') || ''
@@ -841,16 +846,158 @@ app.get('/api/admin/orders', async (c) => {
         query += ' ORDER BY t.created_at DESC LIMIT ? OFFSET ?'
         params.push(limit, offset)
 
+        console.log('🔍 Executing query:', query)
+        console.log('📊 Query params:', params)
+
         const orders = await db.prepare(query)
             .bind(...params)
             .all()
+
+        console.log('✅ Orders fetched:', orders.results?.length || 0)
+        console.log('📋 Orders data:', JSON.stringify(orders.results, null, 2))
 
         // For count, we need to bind search params only
         const countParams = search ? [params[0], params[1], params[2], params[3]] : []
         const total = await db.prepare(countQuery).bind(...countParams).first<{ count: number }>()
 
-        return c.json({
+        console.log('📊 Total count:', total?.count || 0)
+
+        const response = {
             orders: orders.results,
+            pagination: {
+                page,
+                limit,
+                total: total?.count || 0,
+                totalPages: Math.ceil((total?.count || 0) / limit)
+            }
+        }
+
+        console.log('📤 Sending response:', JSON.stringify(response, null, 2))
+
+        return c.json(response)
+
+    } catch (error) {
+        console.error('❌ Admin Orders Error:', error)
+        return c.json({ error: 'Internal server error' }, 500)
+    }
+})
+
+// AFA Registration
+app.post('/api/afa/register', async (c) => {
+    try {
+        const db = c.env.DB
+        const body = await c.req.json()
+        const { fullName, phoneNumber, town, occupation, idNumber, idType, packageId, amount, paymentReference, paymentStatus } = body
+
+        // Validate required fields
+        if (!fullName || !phoneNumber || !town || !occupation || !idNumber || !idType || !packageId || !amount) {
+            return c.json({ success: false, message: 'All fields are required' }, 400)
+        }
+
+        // Create AFA registration table if it doesn't exist
+        await db.prepare(`
+            CREATE TABLE IF NOT EXISTS afa_registrations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                full_name TEXT NOT NULL,
+                phone_number TEXT NOT NULL,
+                town TEXT NOT NULL,
+                occupation TEXT NOT NULL,
+                id_number TEXT NOT NULL,
+                id_type TEXT NOT NULL,
+                package_id INTEGER NOT NULL,
+                amount REAL NOT NULL,
+                payment_reference TEXT,
+                payment_status TEXT DEFAULT 'pending',
+                status TEXT DEFAULT 'pending',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `).run()
+
+        // Insert AFA registration
+        const result = await db.prepare(`
+            INSERT INTO afa_registrations (
+                full_name, phone_number, town, occupation, id_number, id_type, 
+                package_id, amount, payment_reference, payment_status, status
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+            fullName, phoneNumber, town, occupation, idNumber, idType,
+            packageId, amount, paymentReference || null, paymentStatus || 'pending',
+            paymentStatus === 'paid' ? 'completed' : 'pending'
+        ).run()
+
+        return c.json({
+            success: true,
+            message: 'AFA registration submitted successfully',
+            data: {
+                id: result.meta.last_row_id,
+                fullName,
+                phoneNumber,
+                town,
+                occupation,
+                idNumber,
+                idType,
+                packageId,
+                amount,
+                paymentReference,
+                paymentStatus: paymentStatus || 'pending',
+                status: paymentStatus === 'paid' ? 'completed' : 'pending'
+            }
+        })
+
+    } catch (error) {
+        console.error('AFA Registration Error:', error)
+        return c.json({ success: false, message: 'Failed to submit registration' }, 500)
+    }
+})
+
+// Admin: Get AFA Registrations
+app.get('/api/admin/afa-registrations', async (c) => {
+    try {
+        const page = parseInt(c.req.query('page') || '1')
+        const limit = parseInt(c.req.query('limit') || '20')
+        const search = c.req.query('search') || ''
+        const status = c.req.query('status') || 'all'
+        const offset = (page - 1) * limit
+
+        const db = c.env.DB
+
+        let query = `
+            SELECT * FROM afa_registrations
+            WHERE 1=1
+        `
+
+        let countQuery = `
+            SELECT COUNT(*) as count FROM afa_registrations
+            WHERE 1=1
+        `
+
+        const params: any[] = []
+
+        if (status && status !== 'all') {
+            query += ` AND status = ?`
+            countQuery += ` AND status = ?`
+            params.push(status)
+        }
+
+        if (search) {
+            const searchCondition = ` AND (full_name LIKE ? OR phone_number LIKE ? OR town LIKE ? OR id_number LIKE ?)`
+            query += searchCondition
+            countQuery += searchCondition
+            const searchParam = `%${search}%`
+            params.push(searchParam, searchParam, searchParam, searchParam)
+        }
+
+        query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+        const queryParams = [...params, limit, offset]
+
+        const registrations = await db.prepare(query).bind(...queryParams).all()
+
+        const countParams = params.length > 0 ? params : []
+        const total = await db.prepare(countQuery).bind(...countParams).first<{ count: number }>()
+
+        return c.json({
+            registrations: registrations.results,
             pagination: {
                 page,
                 limit,
@@ -860,8 +1007,8 @@ app.get('/api/admin/orders', async (c) => {
         })
 
     } catch (error) {
-        console.error('Admin Orders Error:', error)
-        return c.json({ error: 'Internal server error' }, 500)
+        console.error('Fetch AFA Registrations Error:', error)
+        return c.json({ error: 'Failed to fetch AFA registrations' }, 500)
     }
 })
 
