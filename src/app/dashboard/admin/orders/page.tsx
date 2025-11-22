@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import useSWR, { mutate } from "swr"
+import useSWR from "swr"
 import { Badge } from "@/components/ui/badge"
 import {
     DropdownMenu,
@@ -69,7 +69,7 @@ export default function AdminOrdersPage() {
         return () => clearTimeout(timer)
     }, [search])
 
-    const { data, error, isLoading } = useSWR<OrdersResponse>(`/api/admin/orders?page=${page}&limit=10&search=${debouncedSearch}&status=${statusFilter}`, fetcher, {
+    const { data, error, isLoading, mutate } = useSWR<OrdersResponse>(`/api/admin/orders?page=${page}&limit=10&search=${debouncedSearch}&status=${statusFilter}`, fetcher, {
         revalidateOnFocus: false,
         onSuccess: (data) => {
             console.log('✅ Admin Orders Data:', data)
@@ -118,7 +118,7 @@ export default function AdminOrdersPage() {
                 title: "Success",
                 description: `Order marked as ${status}.`,
             })
-            mutate(`/api/admin/orders?page=${page}&limit=10`)
+            mutate()
         } catch (error: any) {
             toast({
                 title: "Error",

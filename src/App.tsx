@@ -28,6 +28,7 @@ import ForgotPassword from "@/app/forgot-password/page";
 import SuccessPage from "@/app/checkout/success/page";
 import AgentDashboard from "@/app/dashboard/agent/page";
 import AgentRegisterPage from "@/app/agent/register/page";
+import AfaOrdersPage from "@/app/afa/orders/page";
 
 import AdminOrders from "@/app/dashboard/admin/orders/page";
 import AdminAfa from "@/app/dashboard/admin/afa/page";
@@ -41,6 +42,8 @@ import AgentProfile from "@/app/dashboard/agent/profile/page";
 import AgentSettings from "@/app/dashboard/agent/settings/page";
 import AgentWallet from "@/app/dashboard/agent/wallet/page";
 import AfaRegisterPage from "@/app/afa/register/page";
+import AfaCheckoutPage from "@/app/afa/checkout/page";
+import AfaSuccessPage from "@/app/afa/success/page";
 
 export default function App() {
     return (
@@ -90,7 +93,11 @@ export default function App() {
                             <Route path="/wallet/topup" element={<WalletTopup />} />
                             <Route path="/forgot-password" element={<ForgotPassword />} />
                             <Route path="/agent/register" element={<AgentRegisterPage />} />
+                            <Route path="/afa/register" element={<AfaRegisterPage />} />
+                            <Route path="/afa/checkout" element={<AfaCheckoutPage />} />
+                            <Route path="/afa/success" element={<AfaSuccessPage />} />
                             <Route path="/stores/afa-registration" element={<AfaRegisterPage />} />
+                            <Route path="/afa/orders" element={<AfaOrdersPage />} />
                             <Route path="/agent/dashboard" element={<Navigate to="/dashboard/agent" replace />} />
                         </Routes>
                         <MobileNav />

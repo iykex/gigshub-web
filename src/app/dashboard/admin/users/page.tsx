@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import useSWR, { mutate } from "swr"
+import useSWR from "swr"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -84,7 +84,7 @@ export default function AdminUsersPage() {
         return () => clearTimeout(timer)
     }, [search])
 
-    const { data, error, isLoading } = useSWR<UsersResponse>(`/api/admin/users?page=${page}&limit=10&search=${debouncedSearch}`, fetcher, {
+    const { data, error, isLoading, mutate } = useSWR<UsersResponse>(`/api/admin/users?page=${page}&limit=10&search=${debouncedSearch}`, fetcher, {
         revalidateOnFocus: false
     })
 
@@ -135,7 +135,7 @@ export default function AdminUsersPage() {
                 description: "User role updated successfully.",
             })
             setIsEditRoleOpen(false)
-            mutate(`/api/admin/users?page=${page}&limit=10&search=${debouncedSearch}`)
+            mutate()
         } catch (error: any) {
             toast({
                 title: "Error",
@@ -168,7 +168,7 @@ export default function AdminUsersPage() {
                 title: "Success",
                 description: `User ${user.is_active ? 'banned' : 'unbanned'} successfully.`,
             })
-            mutate(`/api/admin/users?page=${page}&limit=10&search=${debouncedSearch}`)
+            mutate()
         } catch (error: any) {
             toast({
                 title: "Error",
@@ -195,7 +195,7 @@ export default function AdminUsersPage() {
                 title: "Success",
                 description: `User ${user.name} deleted successfully.`,
             })
-            mutate(`/api/admin/users?page=${page}&limit=10&search=${debouncedSearch}`)
+            mutate()
         } catch (error: any) {
             toast({
                 title: "Error",
@@ -238,7 +238,7 @@ export default function AdminUsersPage() {
                 description: `Successfully credited GHS ${creditAmount} to ${selectedUser.name}.`,
             })
             setIsCreditWalletOpen(false)
-            mutate(`/api/admin/users?page=${page}&limit=10&search=${debouncedSearch}`)
+            mutate()
         } catch (error: any) {
             toast({
                 title: "Error",
@@ -285,7 +285,7 @@ export default function AdminUsersPage() {
                 password: "",
                 role: "user"
             })
-            mutate(`/api/admin/users?page=${page}&limit=10&search=${debouncedSearch}`)
+            mutate()
         } catch (error: any) {
             toast({
                 title: "Error",
@@ -351,7 +351,7 @@ export default function AdminUsersPage() {
             </div>
 
             {/* Desktop Table */}
-            <div className="hidden md:block rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden">
+            <div className="hidden md:block rounded-xl border bg-card text-card-foreground shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-muted/50 text-muted-foreground font-medium">

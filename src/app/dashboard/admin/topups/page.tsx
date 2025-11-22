@@ -22,6 +22,13 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface Topup {
     id: string
@@ -95,7 +102,7 @@ export default function AdminTopupsPage() {
         fetchUsers()
     }
 
-    const { data, error, isLoading } = useSWR<TopupsResponse>(`/api/admin/topups?page=${page}&limit=10`, fetcher, {
+    const { data, error, isLoading, mutate: revalidate } = useSWR<TopupsResponse>(`/api/admin/topups?page=${page}&limit=10`, fetcher, {
         refreshInterval: 10000, // Poll every 10 seconds
         revalidateOnFocus: false
     })
@@ -123,7 +130,7 @@ export default function AdminTopupsPage() {
             })
 
             // Revalidate the data
-            mutate(`/api/admin/topups?page=${page}&limit=10`)
+            revalidate()
             // Also revalidate stats as revenue might change
             mutate('/api/admin/stats')
 
@@ -173,7 +180,7 @@ export default function AdminTopupsPage() {
 
             setIsManualTxOpen(false)
             setManualTx({ userId: "", userEmail: "", amount: "", type: "credit", description: "" })
-            mutate(`/api/admin/topups?page=${page}&limit=10`)
+            revalidate()
         } catch (error: any) {
             toast({
                 title: "Error",
@@ -216,7 +223,7 @@ export default function AdminTopupsPage() {
             </div>
 
             {/* Desktop Table */}
-            <GlassCard className="hidden md:block p-0 overflow-hidden">
+            <GlassCard className="hidden md:block p-0">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-muted/50 text-muted-foreground font-medium">
@@ -274,32 +281,34 @@ export default function AdminTopupsPage() {
                                             {new Date(topup.created_at).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            {topup.status === 'pending' ? (
-                                                <div className="flex justify-end gap-2">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
-                                                        onClick={() => handleAction(topup.id, 'approve')}
-                                                        disabled={!!processingId}
-                                                    >
-                                                        {processingId === topup.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                                            <DropdownMenu modal={false}>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" disabled={!!processingId && processingId === topup.id}>
+                                                        {processingId === topup.id ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        )}
                                                     </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                                        onClick={() => handleAction(topup.id, 'reject')}
-                                                        disabled={!!processingId}
-                                                    >
-                                                        {processingId === topup.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
-                                                    </Button>
-                                                </div>
-                                            ) : (
-                                                <Button variant="ghost" size="icon" disabled>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            )}
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                    {topup.status === 'pending' ? (
+                                                        <>
+                                                            <DropdownMenuItem onClick={() => handleAction(topup.id, 'approve')} className="text-green-600 cursor-pointer">
+                                                                <Check className="mr-2 h-4 w-4" /> Approve Request
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleAction(topup.id, 'reject')} className="text-red-600 cursor-pointer">
+                                                                <X className="mr-2 h-4 w-4" /> Reject Request
+                                                            </DropdownMenuItem>
+                                                        </>
+                                                    ) : (
+                                                        <DropdownMenuItem disabled>
+                                                            No actions available
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </td>
                                     </tr>
                                 ))

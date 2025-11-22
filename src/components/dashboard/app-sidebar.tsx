@@ -46,6 +46,11 @@ const userNavItems = [
         icon: ShoppingBag,
     },
     {
+        title: "AFA Orders",
+        href: "/afa/orders",
+        icon: FileText,
+    },
+    {
         title: "Settings",
         href: "/dashboard/settings",
         icon: Settings,
