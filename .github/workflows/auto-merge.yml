@@ -1,0 +1,41 @@
+name: Auto PR and Merge to Main
+
+on:
+  push:
+    branches:
+      - migrate-to-vite
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-pr:
+    runs-on: ubuntu-latest
+
+    outputs:
+      pr-number: ${{ steps.pr.outputs.pull-request-number }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create Pull Request
+        id: pr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: "Auto Merge migrate-to-vite → main"
+          body: "This PR was automatically created after pushing to migrate-to-vite."
+          base: main
+          branch: migrate-to-vite
+          labels: auto-merge
+
+  merge:
+    needs: auto-pr
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Enable Auto Merge
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          pull-request-number: ${{ needs.auto-pr.outputs.pr-number }}
+          merge-method: squash
