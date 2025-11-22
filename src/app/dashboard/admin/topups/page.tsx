@@ -49,6 +49,7 @@ interface User {
     id: string
     name: string
     email: string
+    role?: string
 }
 
 const fetcher = (url: string): Promise<TopupsResponse> => fetch(url).then((res) => res.json())
@@ -65,6 +66,34 @@ export default function AdminTopupsPage() {
         description: ""
     })
     const [isProcessing, setIsProcessing] = useState(false)
+    const [users, setUsers] = useState<User[]>([])
+    const [isLoadingUsers, setIsLoadingUsers] = useState(false)
+
+    const fetchUsers = async () => {
+        setIsLoadingUsers(true)
+        try {
+            const res = await fetch('/api/admin/users?limit=100') // Fetch up to 100 users for now
+            const data = await res.json() as { users: User[] }
+            if (data.users) {
+                setUsers(data.users)
+            }
+        } catch (error) {
+            console.error("Failed to fetch users", error)
+            toast({
+                title: "Error",
+                description: "Failed to load user list",
+                variant: "destructive"
+            })
+        } finally {
+            setIsLoadingUsers(false)
+        }
+    }
+
+    // Fetch users when dialog opens
+    const handleOpenManualTx = () => {
+        setIsManualTxOpen(true)
+        fetchUsers()
+    }
 
     const { data, error, isLoading } = useSWR<TopupsResponse>(`/api/admin/topups?page=${page}&limit=10`, fetcher, {
         refreshInterval: 10000, // Poll every 10 seconds
@@ -180,7 +209,7 @@ export default function AdminTopupsPage() {
                         Oversee wallet top-up requests and transactions.
                     </p>
                 </div>
-                <Button onClick={() => setIsManualTxOpen(true)}>
+                <Button onClick={handleOpenManualTx}>
                     <Plus className="w-4 h-4 mr-2" />
                     Manual Transaction
                 </Button>
@@ -393,18 +422,29 @@ export default function AdminTopupsPage() {
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="userEmail">User Email</Label>
-                            <Input
-                                id="userEmail"
-                                type="email"
-                                placeholder="user@example.com"
-                                value={manualTx.userEmail}
-                                onChange={(e) => setManualTx(prev => ({ ...prev, userEmail: e.target.value }))}
-                                onBlur={(e) => fetchUserByEmail(e.target.value)}
-                            />
-                            {manualTx.userId && (
-                                <p className="text-xs text-green-600">✓ User found</p>
-                            )}
+                            <Label htmlFor="userId">Select User</Label>
+                            <Select
+                                value={manualTx.userId}
+                                onValueChange={(value) => {
+                                    const selectedUser = users.find(u => u.id === value)
+                                    setManualTx(prev => ({
+                                        ...prev,
+                                        userId: value,
+                                        userEmail: selectedUser?.email || ""
+                                    }))
+                                }}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder={isLoadingUsers ? "Loading users..." : "Select a user"} />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-[200px]">
+                                    {users.map((user) => (
+                                        <SelectItem key={user.id} value={user.id}>
+                                            {user.name || 'Unknown'} ({user.email}) - {user.role || 'user'}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="txType">Transaction Type</Label>

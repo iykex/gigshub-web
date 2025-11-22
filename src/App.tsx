@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/contexts/auth-context"
 import { CartProvider } from "@/contexts/cart-context"
@@ -28,6 +28,17 @@ import SuccessPage from "@/app/checkout/success/page";
 import AgentDashboard from "@/app/dashboard/agent/page";
 import AgentRegisterPage from "@/app/agent/register/page";
 
+import AdminOrders from "@/app/dashboard/admin/orders/page";
+import AdminTopups from "@/app/dashboard/admin/topups/page";
+import AdminValidations from "@/app/dashboard/admin/validations/page";
+import AdminStore from "@/app/dashboard/admin/store/page";
+import AdminSMS from "@/app/dashboard/admin/sms/page";
+
+import AgentOrders from "@/app/dashboard/agent/orders/page";
+import AgentProfile from "@/app/dashboard/agent/profile/page";
+import AgentSettings from "@/app/dashboard/agent/settings/page";
+import AgentWallet from "@/app/dashboard/agent/wallet/page";
+
 export default function App() {
     return (
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
@@ -46,12 +57,25 @@ export default function App() {
                                 <Route path="profile" element={<Profile />} />
                                 <Route path="settings" element={<Settings />} />
                                 <Route path="wallet" element={<DashboardWallet />} />
-                                <Route path="agent" element={<AgentDashboard />} />
+
+                                {/* Agent Routes */}
+                                <Route path="agent">
+                                    <Route index element={<AgentDashboard />} />
+                                    <Route path="orders" element={<AgentOrders />} />
+                                    <Route path="profile" element={<AgentProfile />} />
+                                    <Route path="settings" element={<AgentSettings />} />
+                                    <Route path="wallet" element={<AgentWallet />} />
+                                </Route>
 
                                 {/* Admin Routes */}
                                 <Route path="admin">
                                     <Route index element={<AdminDashboard />} />
                                     <Route path="users" element={<AdminUsers />} />
+                                    <Route path="orders" element={<AdminOrders />} />
+                                    <Route path="topups" element={<AdminTopups />} />
+                                    <Route path="validations" element={<AdminValidations />} />
+                                    <Route path="stores" element={<AdminStore />} />
+                                    <Route path="sms" element={<AdminSMS />} />
                                 </Route>
                             </Route>
 
@@ -62,6 +86,7 @@ export default function App() {
                             <Route path="/wallet/topup" element={<WalletTopup />} />
                             <Route path="/forgot-password" element={<ForgotPassword />} />
                             <Route path="/agent/register" element={<AgentRegisterPage />} />
+                            <Route path="/agent/dashboard" element={<Navigate to="/dashboard/agent" replace />} />
                         </Routes>
                         <MobileNav />
                         <FloatingWhatsAppWrapper />

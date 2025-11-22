@@ -1,5 +1,5 @@
 import { GlassCard } from "@/components/ui/glass-card"
-import { Users, Search, MoreHorizontal, Shield, Ban, Eye, Edit, Loader2, CreditCard } from "lucide-react"
+import { Users, Search, MoreHorizontal, Shield, Ban, Eye, Edit, Loader2, CreditCard, Trash2 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -168,6 +168,33 @@ export default function AdminUsersPage() {
         }
     }
 
+    const handleDeleteUser = async (user: User) => {
+        if (!confirm(`Are you sure you want to PERMANENTLY DELETE ${user.name}? This action cannot be undone.`)) return
+
+        try {
+            const res = await fetch(`/api/admin/users/${user.id}`, {
+                method: 'DELETE',
+            })
+
+            if (!res.ok) {
+                const err = await res.json() as ErrorResponse
+                throw new Error(err.error || 'Failed to delete user')
+            }
+
+            toast({
+                title: "Success",
+                description: `User ${user.name} deleted successfully.`,
+            })
+            mutate(`/api/admin/users?page=${page}&limit=10&search=${debouncedSearch}`)
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description: error.message,
+                variant: "destructive"
+            })
+        }
+    }
+
     const handleCreditWallet = async () => {
         if (!selectedUser || !creditAmount || isNaN(Number(creditAmount)) || Number(creditAmount) <= 0) {
             toast({
@@ -232,8 +259,11 @@ export default function AdminUsersPage() {
                     <CreditCard className="mr-2 h-4 w-4" /> Credit Wallet
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className={user.is_active ? "text-red-600" : "text-green-600"} onClick={() => handleBanUser(user)}>
+                <DropdownMenuItem className={user.is_active ? "text-orange-600" : "text-green-600"} onClick={() => handleBanUser(user)}>
                     <Ban className="mr-2 h-4 w-4" /> {user.is_active ? "Ban User" : "Unban User"}
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteUser(user)}>
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete User
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

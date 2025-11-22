@@ -8,6 +8,8 @@ import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { motion, AnimatePresence } from "framer-motion"
 import { useCart } from "@/contexts/cart-context"
+import { getDashboardRoute, getDashboardLabel } from "@/lib/dashboard-utils"
+import { Role } from "@/lib/permissions"
 
 const MotionLink = motion(Link)
 
@@ -281,8 +283,26 @@ function WalletButton({ isMobile = false, onClose }: { isMobile?: boolean, onClo
 export function HomeNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(false)
   const pathname = useLocation().pathname
   const { user } = useAuth()
+
+  // Track theme changes
+  useEffect(() => {
+    const checkTheme = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'))
+    }
+
+    checkTheme()
+
+    const observer = new MutationObserver(checkTheme)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    })
+
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -307,13 +327,23 @@ export function HomeNavbar() {
   }, [isMenuOpen])
 
   const allNavLinks = [
-    { href: '/', label: 'Home', public: true },
-    { href: '/stores', label: 'Stores', public: false },
-    { href: '/agent/register', label: 'Agent Registration', public: false },
-    { href: '/wallet/topup', label: 'Wallet topup', public: false },
+    { href: '/', label: 'Home', public: true, requiresAuth: false },
+    { href: '/stores', label: 'Stores', public: false, requiresAuth: true },
+    { href: '/agent/register', label: 'Agent Registration', public: false, requiresAuth: true, hideForAgent: true },
   ]
 
-  const navLinks = allNavLinks.filter(link => link.public || user)
+  const navLinks = allNavLinks.filter(link => {
+    // Show public links to everyone
+    if (link.public) return true;
+
+    // Show auth-required links only to logged-in users
+    if (link.requiresAuth && !user) return false;
+
+    // Hide Agent Registration if user is already an agent
+    if (link.hideForAgent && user?.role === 'agent') return false;
+
+    return true;
+  })
 
   const getHref = (path: string) => {
     return user ? path : '/login'
@@ -420,10 +450,39 @@ export function HomeNavbar() {
                   <ThemeToggle />
                 </div>
 
-                {/* Cart Button */}
+                {/* Wallet Button */}
                 <div className="ml-2">
                   <WalletButton />
                 </div>
+
+                {/* Dashboard Button - Only for authenticated users */}
+                {user && (
+                  <div className="ml-2">
+                    <Link to={getDashboardRoute(user.role as Role)}>
+                      <motion.div
+                        whileTap={{ scale: 0.95 }}
+                        className="relative px-4 py-2 rounded-full text-sm font-medium overflow-hidden"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(70, 130, 180, 0.2) 0%, rgba(70, 130, 180, 0.1) 100%)',
+                          border: '1px solid rgba(70, 130, 180, 0.3)',
+                        }}
+                      >
+                        <motion.div
+                          whileHover={{ opacity: 1 }}
+                          className="absolute inset-0 opacity-0"
+                          style={{
+                            background: 'rgba(70, 130, 180, 0.15)',
+                          }}
+                          transition={{ duration: 0.2 }}
+                        />
+                        <span className="relative z-10 text-[#0077BE] dark:text-[#4A9FD8] flex items-center gap-2">
+                          <LayoutDashboard className="w-4 h-4" />
+                          {getDashboardLabel(user.role as Role)}
+                        </span>
+                      </motion.div>
+                    </Link>
+                  </div>
+                )}
 
                 {/* Auth Button */}
                 <div className="ml-2">
@@ -489,25 +548,30 @@ export function HomeNavbar() {
               className="fixed top-20 left-4 right-4 z-50 md:hidden"
             >
               <div
-                className="relative rounded-[24px] overflow-hidden"
+                className="relative rounded-[24px] overflow-hidden transition-all duration-200"
                 style={{
-                  background: 'rgba(255, 255, 255, 0.85)',
+                  background: isDarkMode ? 'rgba(20, 20, 20, 0.85)' : 'rgba(255, 255, 255, 0.85)',
                   backdropFilter: 'blur(60px) saturate(200%)',
                   WebkitBackdropFilter: 'blur(60px) saturate(200%)',
-                  border: '1px solid rgba(255, 255, 255, 0.3)',
-                  boxShadow: `
-                    0 20px 60px rgba(0, 0, 0, 0.15),
-                    0 8px 24px rgba(0, 0, 0, 0.08),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-                    inset 0 -1px 0 rgba(0, 0, 0, 0.08)
-                  `,
+                  border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.3)',
+                  boxShadow: isDarkMode
+                    ? `0 20px 60px rgba(0, 0, 0, 0.6),
+                       0 8px 24px rgba(0, 0, 0, 0.3),
+                       inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                       inset 0 -1px 0 rgba(0, 0, 0, 0.3)`
+                    : `0 20px 60px rgba(0, 0, 0, 0.15),
+                       0 8px 24px rgba(0, 0, 0, 0.08),
+                       inset 0 1px 0 rgba(255, 255, 255, 0.6),
+                       inset 0 -1px 0 rgba(0, 0, 0, 0.08)`
                 }}
               >
                 {/* Liquid gradient overlay */}
                 <div
                   className="absolute inset-0 opacity-30 pointer-events-none"
                   style={{
-                    background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.05) 100%)',
+                    background: isDarkMode
+                      ? 'linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.1) 100%)'
+                      : 'linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.05) 100%)',
                   }}
                 />
 

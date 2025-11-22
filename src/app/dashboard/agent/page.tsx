@@ -50,8 +50,8 @@ export default function AgentDashboard() {
       <div className="space-y-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{greeting}, Agent {user?.name?.split(' ')[0] || 'User'}!</h1>
-            <p className="text-muted-foreground">Manage your agent operations and track your performance.</p>
+            <h1 className="text-xl font-bold tracking-tight">{greeting}, Agent {user?.name?.split(' ')[0] || 'User'}!</h1>
+            <p className="text-muted-foreground text-sm">Manage your agent operations and track your performance.</p>
           </div>
           <Button className="rounded-full shadow-lg bg-blue-600 hover:bg-blue-700" asChild>
             <Link to="/stores">
@@ -71,7 +71,7 @@ export default function AgentDashboard() {
             <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">
               GHS {walletData?.balance?.toFixed(2) || '0.00'}
             </div>
-            <Link to="/dashboard/agent/wallet">
+            <Link to="/wallet/topup">
               <Button variant="link" className="px-0 h-auto text-xs text-blue-600 dark:text-blue-400">
                 Top up wallet <ArrowUpRight className="ml-1 w-3 h-3" />
               </Button>

@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog"
 import { toast } from "@/lib/toast"
 import { Separator } from "@/components/ui/separator"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface Order {
     id: string
@@ -59,14 +60,16 @@ export default function AdminOrdersPage() {
     const [viewDialogOpen, setViewDialogOpen] = useState(false)
 
     const [search, setSearch] = useState("")
+
     const [debouncedSearch, setDebouncedSearch] = useState("")
+    const [statusFilter, setStatusFilter] = useState("all")
 
     useEffect(() => {
         const timer = setTimeout(() => setDebouncedSearch(search), 500)
         return () => clearTimeout(timer)
     }, [search])
 
-    const { data, error, isLoading } = useSWR<OrdersResponse>(`/api/admin/orders?page=${page}&limit=10&search=${debouncedSearch}`, fetcher, {
+    const { data, error, isLoading } = useSWR<OrdersResponse>(`/api/admin/orders?page=${page}&limit=10&search=${debouncedSearch}&status=${statusFilter}`, fetcher, {
         revalidateOnFocus: false
     })
 
@@ -212,6 +215,16 @@ export default function AdminOrdersPage() {
                     />
                 </div>
             </div>
+
+
+            <Tabs defaultValue="all" className="w-full" onValueChange={setStatusFilter}>
+                <TabsList>
+                    <TabsTrigger value="all">All Orders</TabsTrigger>
+                    <TabsTrigger value="success">Success</TabsTrigger>
+                    <TabsTrigger value="pending">Pending</TabsTrigger>
+                    <TabsTrigger value="failed">Failed</TabsTrigger>
+                </TabsList>
+            </Tabs>
 
             {/* Desktop Table */}
             <GlassCard className="hidden md:block p-0 overflow-hidden">
@@ -500,6 +513,6 @@ export default function AdminOrdersPage() {
                     )}
                 </DialogContent>
             </Dialog>
-        </div>
+        </div >
     )
 }

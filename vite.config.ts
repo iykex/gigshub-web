@@ -13,8 +13,9 @@ export default defineConfig({
     server: {
         proxy: {
             '/api': {
-                target: 'http://localhost:8788', // Wrangler dev server port
+                target: 'https://gigshub.gabrielagyarko7-account.workers.dev',
                 changeOrigin: true,
+                secure: false,
             },
         },
     },

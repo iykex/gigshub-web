@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
 import { GlassCard } from "@/components/ui/glass-card"
 import { Wallet, ShoppingBag, ArrowUpRight, Plus, History } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link, Navigate } from "react-router-dom"
 import useSWR from "swr"
 
 interface WalletData {
@@ -13,6 +13,11 @@ const fetcher = (url: string): Promise<WalletData> => fetch(url).then((res) => r
 
 export default function DashboardPage() {
   const { user } = useAuth()
+
+  // Redirect agents to their own dashboard
+  if (user?.role === 'agent') {
+    return <Navigate to="/dashboard/agent" replace />
+  }
 
   // Fetch real-time wallet balance
   const { data: walletData } = useSWR<WalletData>(
@@ -53,7 +58,7 @@ export default function DashboardPage() {
           <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">
             GHS {walletData?.balance?.toFixed(2) || '0.00'}
           </div>
-          <Link to="/dashboard/wallet">
+          <Link to="/wallet/topup">
             <Button variant="link" className="px-0 h-auto text-xs text-blue-600 dark:text-blue-400">
               Top up wallet <ArrowUpRight className="ml-1 w-3 h-3" />
             </Button>

@@ -19,8 +19,9 @@ import {
     Menu
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { hasPermission, Role } from "@/lib/permissions"
 
 const userNavItems = [
     {
@@ -121,10 +122,40 @@ export function AppSidebar() {
     const { signOut, user } = useAuth()
     const [isCollapsed, setIsCollapsed] = useState(false)
     const [isMobileOpen, setIsMobileOpen] = useState(false)
+    const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 50 }) // x: percentage from right, y: percentage from top
+    const [isDragging, setIsDragging] = useState(false)
+    const [isDarkMode, setIsDarkMode] = useState(false)
+    const dragStartPos = useRef({ x: 0, y: 0 })
 
     const isAdminPath = pathname.startsWith('/dashboard/admin')
     const isAgentPath = pathname.startsWith('/dashboard/agent')
     const navItems = isAdminPath ? adminNavItems : isAgentPath ? agentNavItems : userNavItems
+
+    // Track theme changes
+    useEffect(() => {
+        const checkTheme = () => {
+            setIsDarkMode(document.documentElement.classList.contains('dark'))
+        }
+
+        checkTheme()
+
+        // Watch for theme changes
+        const observer = new MutationObserver(checkTheme)
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class']
+        })
+
+        return () => observer.disconnect()
+    }, [])
+
+    // Load saved position from localStorage
+    useEffect(() => {
+        const savedPosition = localStorage.getItem('sidebarButtonPosition')
+        if (savedPosition) {
+            setButtonPosition(JSON.parse(savedPosition))
+        }
+    }, [])
 
     // Auto-collapse on mobile/tablet, expand on desktop
     useEffect(() => {
@@ -141,12 +172,66 @@ export function AppSidebar() {
         return () => window.removeEventListener('resize', handleResize)
     }, [])
 
+    // Handle drag start
+    const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+        setIsDragging(true)
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+        dragStartPos.current = { x: clientX, y: clientY }
+        e.preventDefault()
+    }
+
+    // Handle drag move
+    useEffect(() => {
+        const handleDragMove = (e: MouseEvent | TouchEvent) => {
+            if (!isDragging) return
+
+            const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
+            const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
+
+            const deltaX = dragStartPos.current.x - clientX
+            const deltaY = clientY - dragStartPos.current.y
+
+            const viewportWidth = window.innerWidth
+            const viewportHeight = window.innerHeight
+
+            // Calculate new position as percentage
+            const newX = Math.max(0, Math.min(100, buttonPosition.x + (deltaX / viewportWidth) * 100))
+            const newY = Math.max(0, Math.min(100, buttonPosition.y + (deltaY / viewportHeight) * 100))
+
+            setButtonPosition({ x: newX, y: newY })
+            dragStartPos.current = { x: clientX, y: clientY }
+        }
+
+        const handleDragEnd = () => {
+            if (isDragging) {
+                setIsDragging(false)
+                // Save position to localStorage
+                localStorage.setItem('sidebarButtonPosition', JSON.stringify(buttonPosition))
+            }
+        }
+
+        if (isDragging) {
+            document.addEventListener('mousemove', handleDragMove)
+            document.addEventListener('mouseup', handleDragEnd)
+            document.addEventListener('touchmove', handleDragMove)
+            document.addEventListener('touchend', handleDragEnd)
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleDragMove)
+            document.removeEventListener('mouseup', handleDragEnd)
+            document.removeEventListener('touchmove', handleDragMove)
+            document.removeEventListener('touchend', handleDragEnd)
+        }
+    }, [isDragging, buttonPosition])
+
     const NavContent = ({ collapsed }: { collapsed: boolean }) => (
         <div className="flex flex-col h-full">
             <div className={cn("flex items-center h-12 mb-4", collapsed ? "justify-center" : "justify-between px-2")}>
                 {!collapsed && (
                     <span className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
-                        {isAdminPath ? 'Admin Panel' : isAgentPath ? 'Agent Panel' : 'Menu'}
+                        {isAdminPath ? 'Admin Panel' : isAgentPath ? 'Agent Panel' : 'Customer Panel'}
                     </span>
                 )}
                 <Button
@@ -186,7 +271,7 @@ export function AppSidebar() {
                 ))}
 
                 {/* Admin Link for User Dashboard */}
-                {!isAdminPath && user?.role === 'admin' && (
+                {!isAdminPath && hasPermission(user?.role as Role, 'access_admin_panel') && (
                     <Link
                         to="/dashboard/admin"
                         className={cn(
@@ -205,8 +290,28 @@ export function AppSidebar() {
                     </Link>
                 )}
 
-                {/* Back to User Dashboard for Admin */}
-                {isAdminPath && (
+                {/* Agent Link for User Dashboard */}
+                {!isAgentPath && hasPermission(user?.role as Role, 'access_agent_panel') && (
+                    <Link
+                        to="/dashboard/agent"
+                        className={cn(
+                            "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground mt-6 group relative",
+                            "text-muted-foreground hover:text-blue-600",
+                            collapsed && "justify-center px-2"
+                        )}
+                    >
+                        <LayoutDashboard className="w-5 h-5 shrink-0" />
+                        {!collapsed && <span>Agent Dashboard</span>}
+                        {collapsed && (
+                            <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+                                Agent Dashboard
+                            </div>
+                        )}
+                    </Link>
+                )}
+
+                {/* Customer Panel Link for Admin & Agent */}
+                {(isAdminPath || isAgentPath) && hasPermission(user?.role as Role, 'access_customer_panel') && (
                     <Link
                         to="/dashboard"
                         className={cn(
@@ -216,10 +321,10 @@ export function AppSidebar() {
                         )}
                     >
                         <ChevronLeft className="w-5 h-5 shrink-0" />
-                        {!collapsed && <span>Back to Dashboard</span>}
+                        {!collapsed && <span>Customer Panel</span>}
                         {collapsed && (
                             <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded border-1 border-gray-200 shadow-md opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
-                                Back to Dashboard
+                                Customer Panel
                             </div>
                         )}
                     </Link>
@@ -256,21 +361,69 @@ export function AppSidebar() {
                 )}
             >
                 <div className="sticky top-24">
-                    <div className="bg-white/50 dark:bg-gray-900/50 backdrop-blur-xl border border-gray-200/50 dark:border-gray-800/50 rounded-2xl p-4 shadow-sm">
+                    <div
+                        className="rounded-2xl p-4 shadow-lg border backdrop-blur-xl transition-all duration-200"
+                        style={{
+                            background: isDarkMode ? 'rgba(30, 30, 30, 0.7)' : 'rgba(255, 255, 255, 0.7)',
+                            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                            boxShadow: isDarkMode
+                                ? `0 8px 32px rgba(0, 0, 0, 0.4),
+                                   0 2px 8px rgba(0, 0, 0, 0.2),
+                                   inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                                   inset 0 -1px 0 rgba(0, 0, 0, 0.2)`
+                                : `0 8px 32px rgba(0, 0, 0, 0.08),
+                                   0 2px 8px rgba(0, 0, 0, 0.04),
+                                   inset 0 1px 0 rgba(255, 255, 255, 0.8),
+                                   inset 0 -1px 0 rgba(0, 0, 0, 0.05)`
+                        }}
+                    >
                         <NavContent collapsed={isCollapsed} />
                     </div>
                 </div>
             </aside>
 
-            {/* Mobile Sidebar Trigger */}
-            <div className="lg:hidden fixed top-1/2 right-4 -translate-y-1/2 z-[100]">
+            {/* Mobile Sidebar Trigger - Draggable */}
+            <div
+                className="lg:hidden fixed z-[100] touch-none"
+                style={{
+                    right: `${buttonPosition.x}%`,
+                    top: `${buttonPosition.y}%`,
+                    transform: 'translate(50%, -50%)',
+                    cursor: isDragging ? 'grabbing' : 'grab',
+                    transition: isDragging ? 'none' : 'all 0.2s ease-out'
+                }}
+                onMouseDown={handleDragStart}
+                onTouchStart={handleDragStart}
+            >
                 <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
                     <SheetTrigger asChild>
-                        <Button size="icon" className="h-14 w-14 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90">
+                        <Button
+                            size="icon"
+                            className="h-14 w-14 rounded-full shadow-lg bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-transform"
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => e.stopPropagation()}
+                        >
                             <Menu className="h-6 w-6" />
                         </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="w-[300px] sm:w-[400px] p-6">
+                    <SheetContent
+                        side="left"
+                        className="w-[300px] sm:w-[400px] p-6 border-0 transition-all duration-200"
+                        style={{
+                            background: isDarkMode ? 'rgba(20, 20, 20, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+                            backdropFilter: 'blur(40px) saturate(180%)',
+                            WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                            boxShadow: isDarkMode
+                                ? `0 20px 60px rgba(0, 0, 0, 0.6),
+                                   0 8px 24px rgba(0, 0, 0, 0.3),
+                                   inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                                   inset 0 -1px 0 rgba(0, 0, 0, 0.3)`
+                                : `0 20px 60px rgba(0, 0, 0, 0.15),
+                                   0 8px 24px rgba(0, 0, 0, 0.08),
+                                   inset 0 1px 0 rgba(255, 255, 255, 0.6),
+                                   inset 0 -1px 0 rgba(0, 0, 0, 0.08)`
+                        }}
+                    >
                         <div className="mt-6 h-full">
                             <NavContent collapsed={false} />
                         </div>

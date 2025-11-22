@@ -136,16 +136,20 @@ app.post('/api/auth/login', async (c) => {
             return c.json({ error: 'Database connection failed' }, 503)
         }
 
-        // Single optimized query to get both user and password
-        console.log('[Login] Querying user and password...')
-        const result = await db.prepare(`
-            SELECT 
-                u.id, u.name, u.phone, u.email, u.role, u.wallet_balance, u.created_at,
-                p.password_hash
-            FROM users u
-            LEFT JOIN user_passwords p ON u.id = p.user_id
-            WHERE u.email = ?
-        `).bind(email).first<any>()
+        // Step 1: Get user details
+        console.log('[Login] Fetching user details...')
+        const foundUser = await db.prepare('SELECT * FROM users WHERE email = ?').bind(email).first<any>()
+
+        if (!foundUser) {
+            console.log('[Login] User not found')
+            return c.json({ error: 'Invalid email or password' }, 401)
+        }
+
+        // Step 2: Get password hash
+        console.log('[Login] Fetching password hash...')
+        const passwordRecord = await db.prepare('SELECT password_hash FROM user_passwords WHERE user_id = ?').bind(foundUser.id).first<any>()
+
+        const result = { ...foundUser, password_hash: passwordRecord?.password_hash }
 
         if (!result) {
             console.log('[Login] User not found')
@@ -241,41 +245,9 @@ app.get('/api/user/wallet', async (c) => {
     }
 })
 
-// User: Wallet Topup (for testing/manual)
+// User: Wallet Topup (Disabled for users, use Paystack)
 app.post('/api/user/wallet', async (c) => {
-    try {
-        const { userId, amount, type } = await c.req.json()
-        const db = c.env.DB
-
-        if (!userId || !amount) {
-            return c.json({ error: 'Missing required fields' }, 400)
-        }
-
-        // Update balance
-        await db.prepare('UPDATE users SET wallet_balance = COALESCE(wallet_balance, 0) + ? WHERE id = ?')
-            .bind(amount, userId).run()
-
-        // Log transaction
-        const txId = generateId()
-        await db.prepare(`
-            INSERT INTO transactions (id, user_id, reference, amount, status, type, provider, description, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).bind(
-            txId,
-            userId,
-            `MANUAL-${Date.now()}`,
-            amount,
-            'success',
-            type || 'topup',
-            'manual',
-            'Manual wallet topup',
-            new Date().toISOString()
-        ).run()
-
-        return c.json({ success: true })
-    } catch (error) {
-        return c.json({ error: 'Failed to process topup' }, 500)
-    }
+    return c.json({ error: 'Manual topup is restricted to administrators. Please use the payment gateway.' }, 403)
 })
 
 // User: Update Profile
@@ -961,6 +933,188 @@ app.post('/api/admin/topups/action', async (c) => {
 })
 
 // Admin: Stats
+// Admin: Get Orders
+app.get('/api/admin/orders', async (c) => {
+    try {
+        const db = c.env.DB
+        const page = parseInt(c.req.query('page') || '1')
+        const limit = parseInt(c.req.query('limit') || '10')
+        const search = c.req.query('search') || ''
+        const status = c.req.query('status') || 'all'
+        const offset = (page - 1) * limit
+
+        let query = `
+            SELECT t.*, u.name as user_name, u.email as user_email, u.phone as user_phone
+            FROM transactions t 
+            LEFT JOIN users u ON t.user_id = u.id 
+            WHERE (t.type = 'purchase' OR t.type = 'payment')
+        `
+
+        const params: any[] = []
+
+        if (status && status !== 'all') {
+            query += ` AND t.status = ?`
+            params.push(status)
+        }
+
+        if (search) {
+            query += ` AND (t.id LIKE ? OR u.email LIKE ? OR u.name LIKE ?)`
+            params.push(`%${search}%`, `%${search}%`, `%${search}%`)
+        }
+
+        query += ` ORDER BY t.created_at DESC LIMIT ? OFFSET ?`
+        params.push(limit, offset)
+
+        const result = await db.prepare(query).bind(...params).all()
+
+        // Get total count for pagination
+        let countQuery = `
+            SELECT COUNT(*) as total 
+            FROM transactions t 
+            LEFT JOIN users u ON t.user_id = u.id 
+            WHERE (t.type = 'purchase' OR t.type = 'payment')
+        `
+        const countParams: any[] = []
+
+        if (status && status !== 'all') {
+            countQuery += ` AND t.status = ?`
+            countParams.push(status)
+        }
+
+        if (search) {
+            countQuery += ` AND (t.id LIKE ? OR u.email LIKE ? OR u.name LIKE ?)`
+            countParams.push(`%${search}%`, `%${search}%`, `%${search}%`)
+        }
+
+        const count = await db.prepare(countQuery).bind(...countParams).first<any>()
+
+        return c.json({
+            orders: result.results.map((r: any) => ({
+                id: r.id,
+                user_id: r.user_id,
+                user_name: r.user_name,
+                user_email: r.user_email,
+                phone: r.user_phone,
+                product_name: r.description,
+                amount: r.amount,
+                status: r.status,
+                created_at: r.created_at,
+                provider: r.provider
+            })),
+            pagination: {
+                totalPages: Math.ceil((count?.total || 0) / limit)
+            }
+        })
+    } catch (error) {
+        console.error('Fetch orders error:', error)
+        return c.json({ error: 'Failed to fetch orders' }, 500)
+    }
+})
+
+// Admin: Order Action
+app.post('/api/admin/orders/action', async (c) => {
+    try {
+        const { orderId, status } = await c.req.json()
+        const db = c.env.DB
+
+        if (!['success', 'failed', 'pending'].includes(status)) {
+            return c.json({ error: 'Invalid status' }, 400)
+        }
+
+        await db.prepare('UPDATE transactions SET status = ? WHERE id = ?')
+            .bind(status, orderId)
+            .run()
+
+        return c.json({ success: true })
+    } catch (error) {
+        return c.json({ error: 'Failed to update order' }, 500)
+    }
+})
+
+// Admin: Get Validations (Agent Requests)
+app.get('/api/admin/validations', async (c) => {
+    try {
+        const db = c.env.DB
+        const page = parseInt(c.req.query('page') || '1')
+        const limit = parseInt(c.req.query('limit') || '10')
+        const offset = (page - 1) * limit
+
+        // Ensure agent_requests table exists
+        await db.prepare(`
+            CREATE TABLE IF NOT EXISTS agent_requests (
+                id TEXT PRIMARY KEY,
+                user_id TEXT,
+                reference TEXT,
+                amount REAL,
+                status TEXT,
+                business_name TEXT,
+                business_registration_number TEXT,
+                created_at TEXT
+            )
+        `).run()
+
+        const result = await db.prepare(`
+            SELECT ar.*, u.name as user_name, u.email as user_email, u.phone as user_phone
+            FROM agent_requests ar
+            LEFT JOIN users u ON ar.user_id = u.id
+            WHERE ar.status = 'pending'
+            ORDER BY ar.created_at DESC
+            LIMIT ? OFFSET ?
+        `).bind(limit, offset).all()
+
+        const count = await db.prepare("SELECT COUNT(*) as total FROM agent_requests WHERE status = 'pending'").first<any>()
+
+        return c.json({
+            validations: result.results,
+            pagination: {
+                totalPages: Math.ceil((count?.total || 0) / limit)
+            }
+        })
+    } catch (error) {
+        console.error('Fetch validations error:', error)
+        return c.json({ error: 'Failed to fetch validations' }, 500)
+    }
+})
+
+// Admin: Validation Action
+app.post('/api/admin/validations/action', async (c) => {
+    try {
+        const { id, action } = await c.req.json()
+        const db = c.env.DB
+
+        const request = await db.prepare('SELECT * FROM agent_requests WHERE id = ?').bind(id).first<any>()
+        if (!request) return c.json({ error: 'Request not found' }, 404)
+
+        if (action === 'approve') {
+            await db.batch([
+                db.prepare("UPDATE agent_requests SET status = 'approved' WHERE id = ?").bind(id),
+                db.prepare("UPDATE users SET role = 'agent' WHERE id = ?").bind(request.user_id)
+            ])
+        } else if (action === 'reject') {
+            await db.prepare("UPDATE agent_requests SET status = 'rejected' WHERE id = ?").bind(id).run()
+        }
+
+        return c.json({ success: true })
+    } catch (error) {
+        return c.json({ error: 'Failed to process validation' }, 500)
+    }
+})
+
+// Admin: Send SMS
+app.post('/api/admin/sms', async (c) => {
+    try {
+        const { recipients, message } = await c.req.json()
+
+        // Placeholder for SMS integration (e.g., Twilio, mNotify, Arkesel)
+        console.log(`[SMS] Sending to ${recipients.length} recipients: ${message}`)
+
+        // Simulate success
+        return c.json({ success: true, count: recipients.length })
+    } catch (error) {
+        return c.json({ error: 'Failed to send SMS' }, 500)
+    }
+})
+
 app.get('/api/admin/stats', async (c) => {
     try {
         const db = c.env.DB
