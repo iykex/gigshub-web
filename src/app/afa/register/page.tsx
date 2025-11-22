@@ -198,30 +198,8 @@ export default function AfaRegistrationPage() {
 
         sessionStorage.setItem('afa_registration_data', JSON.stringify(registrationData))
 
-        // Create a purchase item for checkout
-        const purchaseItem = {
-            id: selectedPackage.id,
-            name: selectedPackage.name,
-            price: selectedPackage.price,
-            provider: selectedPackage.provider,
-            product_code: selectedPackage.product_code,
-            recipientPhone: formData.phoneNumber,
-            quantity: 1,
-            type: 'afa_registration',
-            metadata: {
-                fullName: formData.fullName,
-                town: formData.town,
-                occupation: formData.occupation,
-                idNumber: formData.idNumber,
-                idType: formData.idType
-            }
-        }
-
-        // Store in sessionStorage for checkout page
-        sessionStorage.setItem('checkout_items', JSON.stringify([purchaseItem]))
-
-        // Redirect to checkout
-        navigate('/checkout')
+        // Redirect to AFA checkout page
+        navigate('/afa/checkout')
     }
 
     return (

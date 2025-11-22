@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
-import useSWR, { mutate } from "swr"
+import useSWR from "swr"
 import { toast } from "@/lib/toast"
 import { Badge } from "@/components/ui/badge"
 
@@ -28,7 +28,7 @@ interface StoreResponse {
 const fetcher = (url: string): Promise<StoreResponse> => fetch(url).then((res) => res.json())
 
 export default function AdminStorePage() {
-    const { data, error, isLoading } = useSWR<StoreResponse>('/api/admin/stores', fetcher)
+    const { data, error, isLoading, mutate } = useSWR<StoreResponse>('/api/admin/stores', fetcher)
     const [products, setProducts] = useState<Product[]>([])
     const [savingId, setSavingId] = useState<number | null>(null)
     const [hasChanges, setHasChanges] = useState<Record<number, boolean>>({})
@@ -76,7 +76,7 @@ export default function AdminStorePage() {
                 return next
             })
 
-            mutate('/api/admin/stores')
+            mutate()
 
         } catch (error) {
             toast({

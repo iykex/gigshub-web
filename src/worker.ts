@@ -807,6 +807,7 @@ app.get('/api/admin/orders', async (c) => {
         const page = parseInt(c.req.query('page') || '1')
         const limit = parseInt(c.req.query('limit') || '20')
         const search = c.req.query('search') || ''
+        const status = c.req.query('status') || 'all'
         const offset = (page - 1) * limit
 
         const db = c.env.DB
@@ -834,6 +835,7 @@ app.get('/api/admin/orders', async (c) => {
         `
 
         const params: any[] = []
+        const countParams: any[] = []
 
         if (search) {
             const searchCondition = ` AND (t.reference LIKE ? OR u.name LIKE ? OR u.email LIKE ? OR t.description LIKE ?)`
@@ -841,6 +843,14 @@ app.get('/api/admin/orders', async (c) => {
             countQuery += searchCondition
             const searchParam = `%${search}%`
             params.push(searchParam, searchParam, searchParam, searchParam)
+            countParams.push(searchParam, searchParam, searchParam, searchParam)
+        }
+
+        if (status && status !== 'all') {
+            query += ' AND t.status = ?'
+            countQuery += ' AND t.status = ?'
+            params.push(status)
+            countParams.push(status)
         }
 
         query += ' ORDER BY t.created_at DESC LIMIT ? OFFSET ?'
@@ -856,8 +866,6 @@ app.get('/api/admin/orders', async (c) => {
         console.log('✅ Orders fetched:', orders.results?.length || 0)
         console.log('📋 Orders data:', JSON.stringify(orders.results, null, 2))
 
-        // For count, we need to bind search params only
-        const countParams = search ? [params[0], params[1], params[2], params[3]] : []
         const total = await db.prepare(countQuery).bind(...countParams).first<{ count: number }>()
 
         console.log('📊 Total count:', total?.count || 0)
@@ -1012,6 +1020,82 @@ app.get('/api/admin/afa-registrations', async (c) => {
     }
 })
 
+// User: Get My AFA Orders
+app.get('/api/afa/my-orders', async (c) => {
+    try {
+        const authHeader = c.req.header('Authorization')
+        if (!authHeader) {
+            return c.json({ error: 'Unauthorized' }, 401)
+        }
+
+        const token = authHeader.replace('Bearer ', '')
+        const db = c.env.DB
+
+        // Verify token and get user
+        const session = await db.prepare('SELECT user_id FROM sessions WHERE token = ? AND expires_at > datetime("now")').bind(token).first<{ user_id: string }>()
+
+        if (!session) {
+            return c.json({ error: 'Invalid or expired session' }, 401)
+        }
+
+        const userId = session.user_id
+
+        // Get user's phone number to match with registrations
+        const user = await db.prepare('SELECT phone FROM users WHERE id = ?').bind(userId).first<{ phone: string }>()
+
+        if (!user) {
+            return c.json({ error: 'User not found' }, 404)
+        }
+
+        // Fetch AFA registrations for this user's phone number
+        const registrations = await db.prepare(`
+            SELECT * FROM afa_registrations
+            WHERE phone_number = ?
+            ORDER BY created_at DESC
+        `).bind(user.phone).all()
+
+        return c.json({
+            orders: registrations.results || [],
+            total: registrations.results?.length || 0
+        })
+
+    } catch (error) {
+        console.error('Fetch My AFA Orders Error:', error)
+        return c.json({ error: 'Failed to fetch your AFA orders' }, 500)
+    }
+})
+
+// Admin: Update AFA Registration Status
+app.patch('/api/admin/afa-registrations/:id/status', async (c) => {
+    try {
+        const id = c.req.param('id')
+        const { status } = await c.req.json()
+        const db = c.env.DB
+
+        // Validate status
+        const validStatuses = ['pending', 'completed', 'failed']
+        if (!validStatuses.includes(status)) {
+            return c.json({ success: false, message: 'Invalid status' }, 400)
+        }
+
+        // Update status
+        await db.prepare(`
+            UPDATE afa_registrations 
+            SET status = ?, updated_at = CURRENT_TIMESTAMP 
+            WHERE id = ?
+        `).bind(status, id).run()
+
+        return c.json({
+            success: true,
+            message: 'Status updated successfully'
+        })
+
+    } catch (error) {
+        console.error('Update AFA Status Error:', error)
+        return c.json({ success: false, message: 'Failed to update status' }, 500)
+    }
+})
+
 // Admin: Delete User
 app.delete('/api/admin/users/:id', async (c) => {
     try {
@@ -1089,27 +1173,55 @@ app.get('/api/admin/stores', async (c) => {
 app.post('/api/admin/stores', async (c) => {
     try {
         const body = await c.req.json()
-        const { id, provider, plan_id, size, price, is_active } = body
+        const { id, provider, size, price, agent_price, is_active } = body
         const db = c.env.DB
 
         if (id) {
-            // Update
-            await db.prepare(`
-                UPDATE pricing 
-                SET provider = ?, plan_id = ?, size = ?, price = ?, is_active = ?
-                WHERE id = ?
-            `).bind(provider, plan_id, size, price, is_active, id).run()
+            // Update - build dynamic query based on provided fields
+            const updates: string[] = []
+            const params: any[] = []
+
+            if (provider !== undefined) {
+                updates.push('provider = ?')
+                params.push(provider)
+            }
+            if (size !== undefined) {
+                updates.push('size = ?')
+                params.push(size)
+            }
+            if (price !== undefined) {
+                updates.push('price = ?')
+                params.push(price)
+            }
+            if (agent_price !== undefined) {
+                updates.push('agent_price = ?')
+                params.push(agent_price)
+            }
+            if (is_active !== undefined) {
+                updates.push('is_active = ?')
+                params.push(is_active)
+            }
+
+            if (updates.length > 0) {
+                params.push(id)
+                await db.prepare(`
+                    UPDATE pricing 
+                    SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                `).bind(...params).run()
+            }
         } else {
             // Create
             const newId = generateId()
             await db.prepare(`
-                INSERT INTO pricing (id, provider, plan_id, size, price, is_active)
+                INSERT INTO pricing (id, provider, size, price, agent_price, is_active)
                 VALUES (?, ?, ?, ?, ?, ?)
-            `).bind(newId, provider, plan_id, size, price, is_active !== undefined ? is_active : 1).run()
+            `).bind(newId, provider, size, price, agent_price || null, is_active !== undefined ? is_active : 1).run()
         }
 
         return c.json({ success: true })
     } catch (error) {
+        console.error('Save store item error:', error)
         return c.json({ error: 'Failed to save store item' }, 500)
     }
 })

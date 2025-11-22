@@ -49,3 +49,6 @@ wrangler.toml.local
 
 # vite
 .vite/
+
+# md
+A*.md

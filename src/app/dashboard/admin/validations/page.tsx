@@ -36,7 +36,7 @@ export default function AdminValidationsPage() {
     const [page, setPage] = useState(1)
     const [processingId, setProcessingId] = useState<string | null>(null)
 
-    const { data, error, isLoading } = useSWR<ValidationsResponse>(`/api/admin/validations?page=${page}&limit=10`, fetcher, {
+    const { data, error, isLoading, mutate: revalidate } = useSWR<ValidationsResponse>(`/api/admin/validations?page=${page}&limit=10`, fetcher, {
         refreshInterval: 10000,
         revalidateOnFocus: false
     })
@@ -64,7 +64,7 @@ export default function AdminValidationsPage() {
             })
 
             // Revalidate the data
-            mutate(`/api/admin/validations?page=${page}&limit=10`)
+            revalidate()
             // Also revalidate stats as pending validations count changes
             mutate('/api/admin/stats')
 
