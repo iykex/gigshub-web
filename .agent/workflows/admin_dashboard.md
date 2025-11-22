@@ -48,7 +48,7 @@ This workflow describes how to manage the Admin Dashboard modules.
     - Change the user's role to `agent`.
 - **Reject**: Click the X to reject.
 
-### 5. Store & Pricing (`/dashboard/admin/store`)
+### 5. Store & Pricing (`/dashboard/admin/stores`)
 - **Manage Products**: View data bundles grouped by provider (MTN, Telecel, AT).
 - **Update Price**: Edit the "Price" and "Agent Price" fields.
 - **Toggle Availability**: Use the switch to enable/disable a product.
