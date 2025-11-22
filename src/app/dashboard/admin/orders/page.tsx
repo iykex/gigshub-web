@@ -70,8 +70,17 @@ export default function AdminOrdersPage() {
     }, [search])
 
     const { data, error, isLoading } = useSWR<OrdersResponse>(`/api/admin/orders?page=${page}&limit=10&search=${debouncedSearch}&status=${statusFilter}`, fetcher, {
-        revalidateOnFocus: false
+        revalidateOnFocus: false,
+        onSuccess: (data) => {
+            console.log('✅ Admin Orders Data:', data)
+            console.log('Orders count:', data?.orders?.length || 0)
+        },
+        onError: (err) => {
+            console.error('❌ Admin Orders Error:', err)
+        }
     })
+
+    console.log('Admin Orders Page State:', { data, error, isLoading, page, search: debouncedSearch, statusFilter })
 
     const orders: Order[] = data?.orders || []
     const totalPages = data?.pagination?.totalPages || 1

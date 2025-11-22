@@ -13,7 +13,7 @@ export default defineConfig({
     server: {
         proxy: {
             '/api': {
-                target: 'https://gigshub.gabrielagyarko7-account.workers.dev',
+                target: 'http://localhost:8788',
                 changeOrigin: true,
                 secure: false,
             },

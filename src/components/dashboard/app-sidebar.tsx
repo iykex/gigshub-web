@@ -16,7 +16,8 @@ import {
     MessageSquare,
     ChevronLeft,
     ChevronRight,
-    Menu
+    Menu,
+    FileText
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { useState, useEffect, useRef } from "react"
@@ -94,6 +95,11 @@ const adminNavItems = [
         title: "Orders",
         href: "/dashboard/admin/orders",
         icon: ShoppingBag,
+    },
+    {
+        title: "AFA Registrations",
+        href: "/dashboard/admin/afa",
+        icon: FileText,
     },
     {
         title: "Topups",
