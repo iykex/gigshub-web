@@ -1,5 +1,3 @@
-"use client"
-
 import { GlassCard } from "@/components/ui/glass-card"
 import { MessageSquare, Send, Users, UserCheck, List } from "lucide-react"
 import { useState } from "react"
@@ -15,6 +13,20 @@ import {
 } from "@/components/ui/select"
 import { toast } from "@/lib/toast"
 import { Loader2 } from "lucide-react"
+
+interface User {
+    id: string
+    phone?: string
+    role: string
+}
+
+interface UsersResponse {
+    users: User[]
+}
+
+interface SMSResponse {
+    count?: number
+}
 
 export default function AdminSMSPage() {
     const [recipientType, setRecipientType] = useState("custom")
@@ -61,12 +73,12 @@ export default function AdminSMSPage() {
 
             try {
                 const res = await fetch(`/api/admin/users?limit=1000`) // Fetch all (limit high)
-                const data = await res.json()
+                const data = await res.json() as UsersResponse
                 if (data.users) {
                     if (recipientType === "all_agents") {
-                        recipients = data.users.filter((u: any) => u.role === 'agent' && u.phone).map((u: any) => u.phone)
+                        recipients = data.users.filter((u) => u.role === 'agent' && u.phone).map((u) => u.phone!)
                     } else {
-                        recipients = data.users.filter((u: any) => u.phone).map((u: any) => u.phone)
+                        recipients = data.users.filter((u) => u.phone).map((u) => u.phone!)
                     }
                 }
             } catch (e) {
@@ -103,7 +115,7 @@ export default function AdminSMSPage() {
                 throw new Error('Failed to send SMS')
             }
 
-            const data = await res.json()
+            const data = await res.json() as SMSResponse
 
             toast({
                 title: "Success",
