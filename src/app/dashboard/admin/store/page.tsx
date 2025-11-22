@@ -89,7 +89,18 @@ export default function AdminStorePage() {
         }
     }
 
-    const providers = ['MTN', 'Telecel', 'AT']
+    const providers = ['MTN', 'Telecel', 'AT BigTime', 'AT iShare', 'AFA']
+
+    const getFilteredProducts = (category: string) => {
+        return products.filter(p => {
+            if (category === 'MTN') return p.provider === 'MTN'
+            if (category === 'Telecel') return p.provider === 'Telecel'
+            if (category === 'AT BigTime') return p.provider === 'AirtelTigo' && p.name.toLowerCase().includes('bigtime')
+            if (category === 'AT iShare') return p.provider === 'AirtelTigo' && p.name.toLowerCase().includes('ishare')
+            if (category === 'AFA') return p.provider === 'AFA' || p.provider === 'AFA Registration'
+            return false
+        })
+    }
 
     return (
         <div className="space-y-6">
@@ -101,189 +112,192 @@ export default function AdminStorePage() {
             </div>
 
             <Tabs defaultValue="MTN" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+                <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 lg:w-full">
                     {providers.map(provider => (
                         <TabsTrigger key={provider} value={provider}>{provider}</TabsTrigger>
                     ))}
                 </TabsList>
 
-                {providers.map(provider => (
-                    <TabsContent key={provider} value={provider}>
-                        <GlassCard className="hidden md:block p-0 overflow-hidden">
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
-                                    <thead className="bg-muted/50 text-muted-foreground font-medium">
-                                        <tr>
-                                            <th className="px-6 py-3">Product Name</th>
-                                            <th className="px-6 py-3">Size</th>
-                                            <th className="px-6 py-3 w-[150px]">Price (GHS)</th>
-                                            <th className="px-6 py-3 w-[150px]">Agent Price</th>
-                                            <th className="px-6 py-3 text-center">Active</th>
-                                            <th className="px-6 py-3 text-right">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-border">
-                                        {isLoading ? (
-                                            Array.from({ length: 5 }).map((_, i) => (
-                                                <tr key={i}>
-                                                    <td className="px-6 py-4"><Skeleton className="h-4 w-32" /></td>
-                                                    <td className="px-6 py-4"><Skeleton className="h-4 w-16" /></td>
-                                                    <td className="px-6 py-4"><Skeleton className="h-10 w-full" /></td>
-                                                    <td className="px-6 py-4"><Skeleton className="h-10 w-full" /></td>
-                                                    <td className="px-6 py-4"><Skeleton className="h-6 w-10 mx-auto" /></td>
-                                                    <td className="px-6 py-4"><Skeleton className="h-9 w-20 ml-auto" /></td>
-                                                </tr>
-                                            ))
-                                        ) : products.filter(p => p.provider === provider).length === 0 ? (
+                {providers.map(provider => {
+                    const filteredProducts = getFilteredProducts(provider)
+                    return (
+                        <TabsContent key={provider} value={provider}>
+                            <GlassCard className="hidden md:block p-0 overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-left">
+                                        <thead className="bg-muted/50 text-muted-foreground font-medium">
                                             <tr>
-                                                <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
-                                                    No products found for {provider}.
-                                                </td>
+                                                <th className="px-6 py-3">Product Name</th>
+                                                <th className="px-6 py-3">Size</th>
+                                                <th className="px-6 py-3 w-[150px]">Price (GHS)</th>
+                                                <th className="px-6 py-3 w-[150px]">Agent Price</th>
+                                                <th className="px-6 py-3 text-center">Active</th>
+                                                <th className="px-6 py-3 text-right">Actions</th>
                                             </tr>
-                                        ) : (
-                                            products.filter(p => p.provider === provider).map((product) => (
-                                                <tr key={product.id} className="hover:bg-muted/50 transition-colors">
-                                                    <td className="px-6 py-4 font-medium">
-                                                        {product.name}
-                                                        <div className="text-xs text-muted-foreground font-mono mt-0.5">
-                                                            {product.product_code}
-                                                        </div>
+                                        </thead>
+                                        <tbody className="divide-y divide-border">
+                                            {isLoading ? (
+                                                Array.from({ length: 5 }).map((_, i) => (
+                                                    <tr key={i}>
+                                                        <td className="px-6 py-4"><Skeleton className="h-4 w-32" /></td>
+                                                        <td className="px-6 py-4"><Skeleton className="h-4 w-16" /></td>
+                                                        <td className="px-6 py-4"><Skeleton className="h-10 w-full" /></td>
+                                                        <td className="px-6 py-4"><Skeleton className="h-10 w-full" /></td>
+                                                        <td className="px-6 py-4"><Skeleton className="h-6 w-10 mx-auto" /></td>
+                                                        <td className="px-6 py-4"><Skeleton className="h-9 w-20 ml-auto" /></td>
+                                                    </tr>
+                                                ))
+                                            ) : filteredProducts.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
+                                                        No products found for {provider}.
                                                     </td>
-                                                    <td className="px-6 py-4">
-                                                        <Badge variant="outline">{product.size}</Badge>
-                                                    </td>
-                                                    <td className="px-6 py-4">
+                                                </tr>
+                                            ) : (
+                                                filteredProducts.map((product) => (
+                                                    <tr key={product.id} className="hover:bg-muted/50 transition-colors">
+                                                        <td className="px-6 py-4 font-medium">
+                                                            {product.name}
+                                                            <div className="text-xs text-muted-foreground font-mono mt-0.5">
+                                                                {product.product_code}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <Badge variant="outline">{product.size}</Badge>
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <Input
+                                                                type="number"
+                                                                step="0.01"
+                                                                value={product.price}
+                                                                onChange={(e) => handleProductChange(product.id, 'price', e.target.value)}
+                                                                className="h-8 w-full"
+                                                            />
+                                                        </td>
+                                                        <td className="px-6 py-4">
+                                                            <Input
+                                                                type="number"
+                                                                step="0.01"
+                                                                value={product.agent_price || ''}
+                                                                onChange={(e) => handleProductChange(product.id, 'agent_price', e.target.value)}
+                                                                className="h-8 w-full"
+                                                            />
+                                                        </td>
+                                                        <td className="px-6 py-4 text-center">
+                                                            <Switch
+                                                                checked={!!product.is_active}
+                                                                onCheckedChange={(checked) => handleProductChange(product.id, 'is_active', checked ? 1 : 0)}
+                                                            />
+                                                        </td>
+                                                        <td className="px-6 py-4 text-right">
+                                                            <Button
+                                                                size="sm"
+                                                                onClick={() => handleSave(product)}
+                                                                disabled={!hasChanges[product.id] || savingId === product.id}
+                                                                className={hasChanges[product.id] ? "bg-primary text-primary-foreground" : ""}
+                                                                variant={hasChanges[product.id] ? "default" : "ghost"}
+                                                            >
+                                                                {savingId === product.id ? (
+                                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                                ) : (
+                                                                    <Save className="h-4 w-4" />
+                                                                )}
+                                                                <span className="ml-2 sr-only">Save</span>
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </GlassCard>
+
+                            {/* Mobile Cards */}
+                            <div className="md:hidden space-y-4">
+                                {isLoading ? (
+                                    Array.from({ length: 3 }).map((_, i) => (
+                                        <GlassCard key={i} className="p-4">
+                                            <div className="flex justify-between mb-4">
+                                                <Skeleton className="h-4 w-24" />
+                                                <Skeleton className="h-6 w-20" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Skeleton className="h-10 w-full" />
+                                                <Skeleton className="h-10 w-full" />
+                                            </div>
+                                        </GlassCard>
+                                    ))
+                                ) : filteredProducts.length === 0 ? (
+                                    <div className="text-center text-muted-foreground py-8">
+                                        No products found for {provider}.
+                                    </div>
+                                ) : (
+                                    filteredProducts.map((product) => (
+                                        <GlassCard key={product.id} className="p-4">
+                                            <div className="flex items-start justify-between mb-4">
+                                                <div>
+                                                    <div className="font-medium">{product.name}</div>
+                                                    <div className="text-xs text-muted-foreground font-mono mt-0.5">
+                                                        {product.product_code}
+                                                    </div>
+                                                </div>
+                                                <Badge variant="outline">{product.size}</Badge>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-medium text-muted-foreground">Price (GHS)</label>
                                                         <Input
                                                             type="number"
                                                             step="0.01"
                                                             value={product.price}
                                                             onChange={(e) => handleProductChange(product.id, 'price', e.target.value)}
-                                                            className="h-8 w-full"
+                                                            className="h-9"
                                                         />
-                                                    </td>
-                                                    <td className="px-6 py-4">
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-xs font-medium text-muted-foreground">Agent Price</label>
                                                         <Input
                                                             type="number"
                                                             step="0.01"
                                                             value={product.agent_price || ''}
                                                             onChange={(e) => handleProductChange(product.id, 'agent_price', e.target.value)}
-                                                            className="h-8 w-full"
+                                                            className="h-9"
                                                         />
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center">
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-between pt-2">
+                                                    <div className="flex items-center space-x-2">
                                                         <Switch
                                                             checked={!!product.is_active}
                                                             onCheckedChange={(checked) => handleProductChange(product.id, 'is_active', checked ? 1 : 0)}
                                                         />
-                                                    </td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        <Button
-                                                            size="sm"
-                                                            onClick={() => handleSave(product)}
-                                                            disabled={!hasChanges[product.id] || savingId === product.id}
-                                                            className={hasChanges[product.id] ? "bg-primary text-primary-foreground" : ""}
-                                                            variant={hasChanges[product.id] ? "default" : "ghost"}
-                                                        >
-                                                            {savingId === product.id ? (
-                                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                                            ) : (
-                                                                <Save className="h-4 w-4" />
-                                                            )}
-                                                            <span className="ml-2 sr-only">Save</span>
-                                                        </Button>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
+                                                        <span className="text-sm text-muted-foreground">Active</span>
+                                                    </div>
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => handleSave(product)}
+                                                        disabled={!hasChanges[product.id] || savingId === product.id}
+                                                        className={hasChanges[product.id] ? "bg-primary text-primary-foreground" : ""}
+                                                        variant={hasChanges[product.id] ? "default" : "ghost"}
+                                                    >
+                                                        {savingId === product.id ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                        ) : (
+                                                            <Save className="h-4 w-4 mr-2" />
+                                                        )}
+                                                        Save
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </GlassCard>
+                                    ))
+                                )}
                             </div>
-                        </GlassCard>
-
-                        {/* Mobile Cards */}
-                        <div className="md:hidden space-y-4">
-                            {isLoading ? (
-                                Array.from({ length: 3 }).map((_, i) => (
-                                    <GlassCard key={i} className="p-4">
-                                        <div className="flex justify-between mb-4">
-                                            <Skeleton className="h-4 w-24" />
-                                            <Skeleton className="h-6 w-20" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Skeleton className="h-10 w-full" />
-                                            <Skeleton className="h-10 w-full" />
-                                        </div>
-                                    </GlassCard>
-                                ))
-                            ) : products.filter(p => p.provider === provider).length === 0 ? (
-                                <div className="text-center text-muted-foreground py-8">
-                                    No products found for {provider}.
-                                </div>
-                            ) : (
-                                products.filter(p => p.provider === provider).map((product) => (
-                                    <GlassCard key={product.id} className="p-4">
-                                        <div className="flex items-start justify-between mb-4">
-                                            <div>
-                                                <div className="font-medium">{product.name}</div>
-                                                <div className="text-xs text-muted-foreground font-mono mt-0.5">
-                                                    {product.product_code}
-                                                </div>
-                                            </div>
-                                            <Badge variant="outline">{product.size}</Badge>
-                                        </div>
-                                        <div className="space-y-4">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-medium text-muted-foreground">Price (GHS)</label>
-                                                    <Input
-                                                        type="number"
-                                                        step="0.01"
-                                                        value={product.price}
-                                                        onChange={(e) => handleProductChange(product.id, 'price', e.target.value)}
-                                                        className="h-9"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-medium text-muted-foreground">Agent Price</label>
-                                                    <Input
-                                                        type="number"
-                                                        step="0.01"
-                                                        value={product.agent_price || ''}
-                                                        onChange={(e) => handleProductChange(product.id, 'agent_price', e.target.value)}
-                                                        className="h-9"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center justify-between pt-2">
-                                                <div className="flex items-center space-x-2">
-                                                    <Switch
-                                                        checked={!!product.is_active}
-                                                        onCheckedChange={(checked) => handleProductChange(product.id, 'is_active', checked ? 1 : 0)}
-                                                    />
-                                                    <span className="text-sm text-muted-foreground">Active</span>
-                                                </div>
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => handleSave(product)}
-                                                    disabled={!hasChanges[product.id] || savingId === product.id}
-                                                    className={hasChanges[product.id] ? "bg-primary text-primary-foreground" : ""}
-                                                    variant={hasChanges[product.id] ? "default" : "ghost"}
-                                                >
-                                                    {savingId === product.id ? (
-                                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                                    ) : (
-                                                        <Save className="h-4 w-4 mr-2" />
-                                                    )}
-                                                    Save
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </GlassCard>
-                                ))
-                            )}
-                        </div>
-                    </TabsContent>
-                ))}
+                        </TabsContent>
+                    )
+                })}
             </Tabs>
         </div>
     )

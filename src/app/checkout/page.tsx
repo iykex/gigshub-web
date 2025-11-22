@@ -82,7 +82,10 @@ export default function CheckoutPage() {
           const response = await fetch('/api/payment/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reference: transaction.reference })
+            body: JSON.stringify({
+              reference: transaction.reference,
+              type: 'purchase'
+            })
           })
 
           const data: PaymentVerificationResponse = await response.json()
@@ -178,8 +181,8 @@ export default function CheckoutPage() {
         })
 
         clearCart()
-        const reference = `ORD-${Math.floor(Math.random() * 1000000)}`
-        navigate(`/checkout/success?reference=${reference}`)
+        const reference = `WALLET-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+        navigate(`/checkout/success?reference=${reference}&method=wallet`)
 
       } else {
         // Paystack Inline Payment

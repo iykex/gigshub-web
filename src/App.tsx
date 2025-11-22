@@ -7,6 +7,7 @@ import "@/styles/toast.css"
 import { MobileNav } from "@/components/nav/mobile-nav"
 import { FloatingWhatsAppWrapper } from "@/components/floating-whatsapp-wrapper"
 import { FloatingOrdersIcon } from "@/components/floating-orders-icon"
+import { PWAInstallBanner } from "@/components/pwa-install-banner"
 
 import Home from "@/app/page";
 import Login from "@/app/login/page";
@@ -91,6 +92,7 @@ export default function App() {
                         <MobileNav />
                         <FloatingWhatsAppWrapper />
                         <FloatingOrdersIcon />
+                        <PWAInstallBanner />
                     </Router>
                 </CartProvider>
             </AuthProvider>

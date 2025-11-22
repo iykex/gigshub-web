@@ -17,6 +17,7 @@ export default function SuccessPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const reference = searchParams.get("reference")
+  const paymentMethod = searchParams.get("method")
   const [verifying, setVerifying] = useState(true)
   const [verified, setVerified] = useState(false)
 
@@ -28,10 +29,34 @@ export default function SuccessPage() {
 
     const verifyPayment = async () => {
       try {
+        // Skip Paystack verification for wallet payments
+        if (paymentMethod === 'wallet' || reference.startsWith('WALLET-')) {
+          setVerified(true)
+
+          // Trigger confetti
+          confetti({
+            particleCount: 150,
+            spread: 80,
+            origin: { y: 0.6 }
+          })
+
+          toast({
+            title: "Payment Verified 🎉",
+            description: "Your wallet payment has been confirmed.",
+            variant: "success"
+          })
+          setVerifying(false)
+          return
+        }
+
+        // Verify Paystack payments
         const response = await fetch('/api/payment/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reference })
+          body: JSON.stringify({
+            reference,
+            type: 'purchase'
+          })
         })
 
         const data = await response.json() as VerificationResponse
@@ -67,7 +92,7 @@ export default function SuccessPage() {
     }
 
     verifyPayment()
-  }, [reference, navigate])
+  }, [reference, paymentMethod, navigate])
 
   if (verifying) {
     return (

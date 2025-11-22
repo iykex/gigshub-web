@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
@@ -32,7 +30,7 @@ export default function SignupPage() {
     try {
       await signup(email, password, username, phone)
       toast({ title: "Signup successful!" })
-      navigate("/dashboard")
+      navigate("/stores")
     } catch (error) {
       toast({
         title: "Signup failed",

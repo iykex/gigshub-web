@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { hasPermission, Role } from "@/lib/permissions"
 import { useEffect, useRef } from "react"
 import { toast } from "@/lib/toast"
+import { Footer } from "@/components/footer"
 
 export default function DashboardLayout() {
   const { user, loading } = useAuth()
@@ -108,6 +109,8 @@ export default function DashboardLayout() {
             </main>
           </div>
         </div>
+
+        <Footer />
       </div>
     </div>
   )

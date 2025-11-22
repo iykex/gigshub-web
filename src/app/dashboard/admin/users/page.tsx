@@ -65,6 +65,17 @@ export default function AdminUsersPage() {
     const [isCreditWalletOpen, setIsCreditWalletOpen] = useState(false)
     const [creditAmount, setCreditAmount] = useState("")
 
+    // Add User Dialog State
+    const [isAddUserOpen, setIsAddUserOpen] = useState(false)
+    const [newUserData, setNewUserData] = useState({
+        name: "",
+        email: "",
+        phone: "",
+        password: "",
+        role: "user"
+    })
+    const [viewUserDialogOpen, setViewUserDialogOpen] = useState(false)
+
     const [search, setSearch] = useState("")
     const [debouncedSearch, setDebouncedSearch] = useState("")
 
@@ -81,7 +92,10 @@ export default function AdminUsersPage() {
     const totalPages = data?.pagination?.totalPages || 1
 
     const handleAction = (action: string, user: User) => {
-        if (action === "Edit Role") {
+        if (action === "View Details") {
+            setSelectedUser(user)
+            setViewUserDialogOpen(true)
+        } else if (action === "Edit Role") {
             setSelectedUser(user)
             setNewRole(user.role)
             setIsEditRoleOpen(true)
@@ -90,11 +104,7 @@ export default function AdminUsersPage() {
             setCreditAmount("")
             setIsCreditWalletOpen(true)
         } else if (action === "Ban User") {
-            toast({
-                title: "Not Implemented",
-                description: "Ban functionality is not yet available.",
-                variant: "destructive"
-            })
+            handleBanUser(user)
         } else {
             toast({
                 title: "Action Triggered",
@@ -240,8 +250,55 @@ export default function AdminUsersPage() {
         }
     }
 
+    const handleAddUser = async () => {
+        if (!newUserData.name || !newUserData.email || !newUserData.password) {
+            toast({
+                title: "Missing Fields",
+                description: "Please fill in all required fields.",
+                variant: "destructive"
+            })
+            return
+        }
+
+        setIsUpdating(true)
+        try {
+            const res = await fetch('/api/admin/users', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newUserData)
+            })
+
+            if (!res.ok) {
+                const err = await res.json() as ErrorResponse
+                throw new Error(err.error || 'Failed to create user')
+            }
+
+            toast({
+                title: "Success",
+                description: `User ${newUserData.name} created successfully.`,
+            })
+            setIsAddUserOpen(false)
+            setNewUserData({
+                name: "",
+                email: "",
+                phone: "",
+                password: "",
+                role: "user"
+            })
+            mutate(`/api/admin/users?page=${page}&limit=10&search=${debouncedSearch}`)
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description: error.message,
+                variant: "destructive"
+            })
+        } finally {
+            setIsUpdating(false)
+        }
+    }
+
     const UserActions = ({ user }: { user: User }) => (
-        <DropdownMenu>
+        <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
                     <MoreHorizontal className="h-4 w-4" />
@@ -289,12 +346,12 @@ export default function AdminUsersPage() {
                             onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
-                    <Button>Add User</Button>
+                    <Button onClick={() => setIsAddUserOpen(true)}>Add User</Button>
                 </div>
             </div>
 
             {/* Desktop Table */}
-            <GlassCard className="hidden md:block p-0 overflow-hidden">
+            <div className="hidden md:block rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-muted/50 text-muted-foreground font-medium">
@@ -362,7 +419,7 @@ export default function AdminUsersPage() {
                         </tbody>
                     </table>
                 </div>
-            </GlassCard>
+            </div>
 
             {/* Mobile Cards */}
             <div className="md:hidden space-y-4">
@@ -521,6 +578,141 @@ export default function AdminUsersPage() {
                             {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Confirm Credit
                         </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Add User Dialog */}
+            <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+                {/* ... existing content ... */}
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add New User</DialogTitle>
+                        <DialogDescription>
+                            Create a new user account. They will receive an email with their credentials.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="newName">Full Name</Label>
+                            <Input
+                                id="newName"
+                                placeholder="John Doe"
+                                value={newUserData.name}
+                                onChange={(e) => setNewUserData({ ...newUserData, name: e.target.value })}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="newEmail">Email Address</Label>
+                            <Input
+                                id="newEmail"
+                                type="email"
+                                placeholder="john@example.com"
+                                value={newUserData.email}
+                                onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="newPhone">Phone Number</Label>
+                            <Input
+                                id="newPhone"
+                                type="tel"
+                                placeholder="0501234567"
+                                value={newUserData.phone}
+                                onChange={(e) => setNewUserData({ ...newUserData, phone: e.target.value })}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="newPassword">Password</Label>
+                            <Input
+                                id="newPassword"
+                                type="password"
+                                placeholder="••••••••"
+                                value={newUserData.password}
+                                onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="newRole">Role</Label>
+                            <Select
+                                value={newUserData.role}
+                                onValueChange={(value) => setNewUserData({ ...newUserData, role: value })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a role" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="user">User</SelectItem>
+                                    <SelectItem value="agent">Agent</SelectItem>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAddUserOpen(false)} disabled={isUpdating}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleAddUser} disabled={isUpdating}>
+                            {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Create User
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* View User Details Dialog */}
+            <Dialog open={viewUserDialogOpen} onOpenChange={setViewUserDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>User Details</DialogTitle>
+                        <DialogDescription>
+                            Detailed information about this user.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedUser && (
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right font-bold">ID</Label>
+                                <div className="col-span-3 font-mono text-sm">{selectedUser.id}</div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right font-bold">Name</Label>
+                                <div className="col-span-3">{selectedUser.name}</div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right font-bold">Email</Label>
+                                <div className="col-span-3">{selectedUser.email}</div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right font-bold">Phone</Label>
+                                <div className="col-span-3">{selectedUser.phone || 'N/A'}</div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right font-bold">Role</Label>
+                                <div className="col-span-3 capitalize">{selectedUser.role}</div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right font-bold">Wallet</Label>
+                                <div className="col-span-3">GHS {selectedUser.wallet_balance?.toFixed(2) || '0.00'}</div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right font-bold">Status</Label>
+                                <div className="col-span-3">
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
+                                        ${selectedUser.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}`}>
+                                        {selectedUser.is_active ? 'Active' : 'Banned'}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right font-bold">Joined</Label>
+                                <div className="col-span-3">{new Date(selectedUser.created_at).toLocaleString()}</div>
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button onClick={() => setViewUserDialogOpen(false)}>Close</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

@@ -131,7 +131,8 @@ export default function StoreDetailPage() {
     }, [config, navigate, storeId])
 
     const getPrice = (pkg: PricingPackage) => {
-        if (user?.role === 'agent' && pkg.agent_price) {
+        // Admins and agents get agent pricing
+        if ((user?.role === 'agent' || user?.role === 'admin') && pkg.agent_price) {
             return pkg.agent_price
         }
         return pkg.price
@@ -218,7 +219,7 @@ export default function StoreDetailPage() {
                             <h1 className="text-2xl font-bold">
                                 {config.name}
                             </h1>
-                            {user?.role === 'agent' && (
+                            {(user?.role === 'agent' || user?.role === 'admin') && (
                                 <Badge
                                     className="px-3 py-1"
                                     style={{
@@ -290,7 +291,7 @@ export default function StoreDetailPage() {
                                             </div>
 
                                             {/* Agent Save Badge (if applicable) */}
-                                            {user?.role === 'agent' && pkg.agent_price && pkg.agent_price < pkg.price && (
+                                            {(user?.role === 'agent' || user?.role === 'admin') && pkg.agent_price && pkg.agent_price < pkg.price && (
                                                 <div className="flex justify-start">
                                                     <Badge
                                                         variant="secondary"
@@ -314,7 +315,7 @@ export default function StoreDetailPage() {
                                                 >
                                                     GHS {getPrice(pkg).toFixed(2)}
                                                 </div>
-                                                {user?.role === 'agent' && pkg.agent_price && pkg.agent_price < pkg.price && (
+                                                {(user?.role === 'agent' || user?.role === 'admin') && pkg.agent_price && pkg.agent_price < pkg.price && (
                                                     <div className="text-xs text-gray-500 dark:text-gray-400 line-through">
                                                         GHS {pkg.price.toFixed(2)}
                                                     </div>
