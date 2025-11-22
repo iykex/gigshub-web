@@ -10,32 +10,31 @@ permissions:
   pull-requests: write
 
 jobs:
-  auto-pr:
+  create-pr:
     runs-on: ubuntu-latest
-
     outputs:
-      pr-number: ${{ steps.pr.outputs.pull-request-number }}
+      pr-number: ${{ steps.pr.outputs.pr_number }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create Pull Request
+      - name: Create PR from migrate-to-vite → main
         id: pr
-        uses: peter-evans/create-pull-request@v6
+        uses: repo-sync/pull-request@v2
         with:
-          title: "Auto Merge migrate-to-vite → main"
-          body: "This PR was automatically created after pushing to migrate-to-vite."
-          base: main
-          branch: migrate-to-vite
-          labels: auto-merge
+          source_branch: migrate-to-vite
+          destination_branch: main
+          pr_title: "Auto merge migrate-to-vite into main"
+          pr_body: "Automated PR."
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
   merge:
-    needs: auto-pr
+    needs: create-pr
     runs-on: ubuntu-latest
 
     steps:
-      - name: Enable Auto Merge
+      - name: Auto Merge PR
         uses: peter-evans/enable-pull-request-automerge@v3
         with:
-          pull-request-number: ${{ needs.auto-pr.outputs.pr-number }}
+          pull-request-number: ${{ needs.create-pr.outputs.pr-number }}
           merge-method: squash
