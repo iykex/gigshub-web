@@ -10,12 +10,12 @@
     "build": "tsc && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "db:schema": "npx wrangler d1 execute gigshub-db --file=./scripts/schema.sql",
-    "db:seed": "npx wrangler d1 execute gigshub-db --file=./scripts/seed_pricing.sql",
+    "db:schema": "npx wrangler d1 execute gigshub-db --remote --file=./src/scripts/schema.sql",
+    "db:seed": "npx wrangler d1 execute gigshub-db --remote --file=./src/scripts/seed_pricing.sql",
     "db:seed-sample": "npx wrangler d1 execute gigshub-db --remote --file=./scripts/seed-sample-data.sql",
-    "db:test": "./scripts/test-db.sh",
+    "db:test": "./src/scripts/test-db.sh",
     "db:reset": "npm run db:schema && npm run db:seed",
-    "db:sync-remote": "tsx scripts/sync-to-remote.ts",
+    "db:sync-remote": "tsx src/scripts/sync-to-remote.ts",
     "db:add-afa": "npx wrangler d1 execute gigshub-db --remote --file=./scripts/add-afa-package.sql"
   },
   "dependencies": {

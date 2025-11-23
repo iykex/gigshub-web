@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { SWRConfig } from 'swr';
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/contexts/auth-context"
 import { CartProvider } from "@/contexts/cart-context"
@@ -48,65 +49,72 @@ import AfaSuccessPage from "@/app/afa/success/page";
 export default function App() {
     return (
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            <AuthProvider>
-                <CartProvider>
-                    <Router>
-                        <Routes>
-                            <Route path="/" element={<Home />} />
-                            <Route path="/login" element={<Login />} />
-                            <Route path="/signup" element={<Signup />} />
+            <SWRConfig value={{
+                revalidateIfStale: true,
+                revalidateOnMount: true,
+                refreshInterval: 0,
+                dedupingInterval: 0,
+            }}>
+                <AuthProvider>
+                    <CartProvider>
+                        <Router>
+                            <Routes>
+                                <Route path="/" element={<Home />} />
+                                <Route path="/login" element={<Login />} />
+                                <Route path="/signup" element={<Signup />} />
 
-                            {/* Dashboard Routes */}
-                            <Route path="/dashboard" element={<DashboardLayout />}>
-                                <Route index element={<Dashboard />} />
-                                <Route path="orders" element={<Orders />} />
-                                <Route path="profile" element={<Profile />} />
-                                <Route path="settings" element={<Settings />} />
-                                <Route path="wallet" element={<DashboardWallet />} />
+                                {/* Dashboard Routes */}
+                                <Route path="/dashboard" element={<DashboardLayout />}>
+                                    <Route index element={<Dashboard />} />
+                                    <Route path="orders" element={<Orders />} />
+                                    <Route path="profile" element={<Profile />} />
+                                    <Route path="settings" element={<Settings />} />
+                                    <Route path="wallet" element={<DashboardWallet />} />
 
-                                {/* Agent Routes */}
-                                <Route path="agent">
-                                    <Route index element={<AgentDashboard />} />
-                                    <Route path="orders" element={<AgentOrders />} />
-                                    <Route path="profile" element={<AgentProfile />} />
-                                    <Route path="settings" element={<AgentSettings />} />
-                                    <Route path="wallet" element={<AgentWallet />} />
+                                    {/* Agent Routes */}
+                                    <Route path="agent">
+                                        <Route index element={<AgentDashboard />} />
+                                        <Route path="orders" element={<AgentOrders />} />
+                                        <Route path="profile" element={<AgentProfile />} />
+                                        <Route path="settings" element={<AgentSettings />} />
+                                        <Route path="wallet" element={<AgentWallet />} />
+                                    </Route>
+
+                                    {/* Admin Routes */}
+                                    <Route path="admin">
+                                        <Route index element={<AdminDashboard />} />
+                                        <Route path="users" element={<AdminUsers />} />
+                                        <Route path="orders" element={<AdminOrders />} />
+                                        <Route path="afa" element={<AdminAfa />} />
+                                        <Route path="topups" element={<AdminTopups />} />
+                                        <Route path="validations" element={<AdminValidations />} />
+                                        <Route path="stores" element={<AdminStore />} />
+                                        <Route path="sms" element={<AdminSMS />} />
+                                    </Route>
                                 </Route>
 
-                                {/* Admin Routes */}
-                                <Route path="admin">
-                                    <Route index element={<AdminDashboard />} />
-                                    <Route path="users" element={<AdminUsers />} />
-                                    <Route path="orders" element={<AdminOrders />} />
-                                    <Route path="afa" element={<AdminAfa />} />
-                                    <Route path="topups" element={<AdminTopups />} />
-                                    <Route path="validations" element={<AdminValidations />} />
-                                    <Route path="stores" element={<AdminStore />} />
-                                    <Route path="sms" element={<AdminSMS />} />
-                                </Route>
-                            </Route>
-
-                            <Route path="/checkout" element={<Checkout />} />
-                            <Route path="/checkout/success" element={<SuccessPage />} />
-                            <Route path="/stores" element={<Stores />} />
-                            <Route path="/stores/:id" element={<StoreDetailPage />} />
-                            <Route path="/wallet/topup" element={<WalletTopup />} />
-                            <Route path="/forgot-password" element={<ForgotPassword />} />
-                            <Route path="/agent/register" element={<AgentRegisterPage />} />
-                            <Route path="/afa/register" element={<AfaRegisterPage />} />
-                            <Route path="/afa/checkout" element={<AfaCheckoutPage />} />
-                            <Route path="/afa/success" element={<AfaSuccessPage />} />
-                            <Route path="/stores/afa-registration" element={<AfaRegisterPage />} />
-                            <Route path="/afa/orders" element={<AfaOrdersPage />} />
-                            <Route path="/agent/dashboard" element={<Navigate to="/dashboard/agent" replace />} />
-                        </Routes>
-                        <MobileNav />
-                        <FloatingWhatsAppWrapper />
-                        <FloatingOrdersIcon />
-                        <PWAInstallBanner />
-                    </Router>
-                </CartProvider>
-            </AuthProvider>
+                                <Route path="/checkout" element={<Checkout />} />
+                                <Route path="/checkout/success" element={<SuccessPage />} />
+                                <Route path="/stores" element={<Stores />} />
+                                <Route path="/stores/:id" element={<StoreDetailPage />} />
+                                <Route path="/wallet/topup" element={<WalletTopup />} />
+                                <Route path="/forgot-password" element={<ForgotPassword />} />
+                                <Route path="/agent/register" element={<AgentRegisterPage />} />
+                                <Route path="/afa/register" element={<AfaRegisterPage />} />
+                                <Route path="/afa/checkout" element={<AfaCheckoutPage />} />
+                                <Route path="/afa/success" element={<AfaSuccessPage />} />
+                                <Route path="/stores/afa-registration" element={<AfaRegisterPage />} />
+                                <Route path="/afa/orders" element={<AfaOrdersPage />} />
+                                <Route path="/agent/dashboard" element={<Navigate to="/dashboard/agent" replace />} />
+                            </Routes>
+                            <MobileNav />
+                            <FloatingWhatsAppWrapper />
+                            <FloatingOrdersIcon />
+                            <PWAInstallBanner />
+                        </Router>
+                    </CartProvider>
+                </AuthProvider>
+            </SWRConfig>
             <ToastContainer />
         </ThemeProvider>
     );
