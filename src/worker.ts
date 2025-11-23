@@ -2,6 +2,7 @@
 import bcrypt from 'bcryptjs'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { getDB, D1Database } from './lib/db'
 
 type Bindings = {
     DB: D1Database
@@ -12,6 +13,11 @@ const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('/*', cors())
 
+app.use('/*', async (c, next) => {
+    await next()
+    c.header('Cache-Control', 'no-store')
+})
+
 app.get('/', (c) => {
     return c.text('GigsHub API')
 })
@@ -19,7 +25,8 @@ app.get('/', (c) => {
 // Pricing API
 app.get('/api/pricing', async (c) => {
     try {
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
         if (!db) {
             return c.json({ error: 'Database connection not available' }, 503)
         }
@@ -130,7 +137,8 @@ app.post('/api/auth/login', async (c) => {
             return c.json({ error: 'Email and password are required' }, 400)
         }
 
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
         if (!db) {
             console.error('[Login] DB connection missing')
             return c.json({ error: 'Database connection failed' }, 503)
@@ -222,7 +230,8 @@ app.get('/api/user/wallet', async (c) => {
         const userId = c.req.query('userId')
         if (!userId) return c.json({ error: 'User ID required' }, 400)
 
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
         const user = await db.prepare('SELECT wallet_balance FROM users WHERE id = ?').bind(userId).first<any>()
 
         if (!user) return c.json({ error: 'User not found' }, 404)
@@ -254,7 +263,8 @@ app.post('/api/user/wallet', async (c) => {
 app.put('/api/user/profile', async (c) => {
     try {
         const { userId, name, phone } = await c.req.json()
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
 
         if (!userId) {
             return c.json({ error: 'User ID required' }, 400)
@@ -277,7 +287,8 @@ app.get('/api/user/orders', async (c) => {
         const search = c.req.query('search') || ''
         const offset = (page - 1) * limit
 
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
 
         // For now, return orders from transactions
         // In a real app, you'd have a separate orders table
@@ -311,7 +322,8 @@ app.get('/api/auth/me', async (c) => {
             return c.json({ error: 'Email required' }, 400)
         }
 
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
         const user = await db.prepare('SELECT id, name, phone, email, role, wallet_balance, created_at FROM users WHERE email = ?').bind(email).first()
 
         if (!user) {
@@ -351,7 +363,8 @@ app.post('/api/auth/signup', async (c) => {
             }
         }
 
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
         if (!db) {
             return c.json({ error: 'Database connection failed' }, 503)
         }
@@ -444,7 +457,8 @@ app.post('/api/auth/migrate-password', async (c) => {
             return c.json({ error: 'Email and password are required' }, 400)
         }
 
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
         if (!db) {
             return c.json({ error: 'Database connection failed' }, 503)
         }
@@ -556,7 +570,8 @@ app.post('/api/payment/verify', async (c) => {
             return c.json({ error: 'Reference is required' }, 400)
         }
 
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
         if (!db) {
             return c.json({ error: 'Database connection failed' }, 503)
         }
@@ -696,7 +711,8 @@ app.post('/api/wallet/pay', async (c) => {
             return c.json({ error: 'User ID and amount are required' }, 400)
         }
 
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
         if (!db) return c.json({ error: 'Database connection failed' }, 503)
 
         // Check balance
@@ -760,7 +776,8 @@ app.post('/api/wallet/pay', async (c) => {
 // Admin: Get All Users
 app.get('/api/admin/users', async (c) => {
     try {
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
         // Ensure is_active column exists (lazy migration)
         try {
             await db.prepare('ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1').run()
@@ -781,7 +798,8 @@ app.put('/api/admin/users/:id', async (c) => {
         const userId = c.req.param('id')
         const body = await c.req.json()
         const { role, is_active } = body
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
 
         if (role) {
             await db.prepare('UPDATE users SET role = ? WHERE id = ?').bind(role, userId).run()
@@ -810,7 +828,8 @@ app.get('/api/admin/orders', async (c) => {
         const status = c.req.query('status') || 'all'
         const offset = (page - 1) * limit
 
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
 
         let query = `
             SELECT 
@@ -893,7 +912,8 @@ app.get('/api/admin/orders', async (c) => {
 // AFA Registration
 app.post('/api/afa/register', async (c) => {
     try {
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
         const body = await c.req.json()
         const { fullName, phoneNumber, town, occupation, idNumber, idType, packageId, amount, paymentReference, paymentStatus } = body
 
@@ -968,7 +988,8 @@ app.get('/api/admin/afa-registrations', async (c) => {
         const status = c.req.query('status') || 'all'
         const offset = (page - 1) * limit
 
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
         if (!db) {
             return c.json({ error: 'Database connection failed' }, 503)
         }
@@ -1051,7 +1072,8 @@ app.get('/api/afa/my-orders', async (c) => {
         }
 
         const token = authHeader.replace('Bearer ', '')
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
 
         // Verify token and get user
         const session = await db.prepare('SELECT user_id FROM sessions WHERE token = ? AND expires_at > datetime("now")').bind(token).first<{ user_id: string }>()
@@ -1111,7 +1133,8 @@ app.patch('/api/admin/afa-registrations/:id/status', async (c) => {
     try {
         const id = c.req.param('id')
         const { status } = await c.req.json()
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
 
         // Validate status
         const validStatuses = ['pending', 'completed', 'failed']
@@ -1141,7 +1164,8 @@ app.patch('/api/admin/afa-registrations/:id/status', async (c) => {
 app.delete('/api/admin/users/:id', async (c) => {
     try {
         const userId = c.req.param('id')
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
         await db.prepare('DELETE FROM users WHERE id = ?').bind(userId).run()
         return c.json({ success: true })
     } catch (error) {
@@ -1154,7 +1178,8 @@ app.post('/api/admin/wallet/transaction', async (c) => {
     try {
         const body = await c.req.json()
         const { userId, amount, type, description } = body // type: 'credit' or 'debit'
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
 
         if (!userId || !amount || !type) {
             return c.json({ error: 'Missing required fields' }, 400)
@@ -1202,7 +1227,8 @@ app.post('/api/admin/wallet/transaction', async (c) => {
 // Admin: Get Store Items
 app.get('/api/admin/stores', async (c) => {
     try {
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
         const result = await db.prepare('SELECT * FROM pricing ORDER BY provider, size').all()
         return c.json({ products: result.results })
     } catch (error) {
@@ -1215,7 +1241,8 @@ app.post('/api/admin/stores', async (c) => {
     try {
         const body = await c.req.json()
         const { id, provider, size, price, agent_price, is_active } = body
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
 
         if (id) {
             // Update - build dynamic query based on provided fields
@@ -1271,7 +1298,8 @@ app.post('/api/admin/stores', async (c) => {
 app.delete('/api/admin/stores/:id', async (c) => {
     try {
         const id = c.req.param('id')
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
         await db.prepare('DELETE FROM pricing WHERE id = ?').bind(id).run()
         return c.json({ success: true })
     } catch (error) {
@@ -1282,7 +1310,8 @@ app.delete('/api/admin/stores/:id', async (c) => {
 // Admin: Get Topups
 app.get('/api/admin/topups', async (c) => {
     try {
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
         const page = parseInt(c.req.query('page') || '1')
         const limit = parseInt(c.req.query('limit') || '10')
         const offset = (page - 1) * limit
@@ -1313,7 +1342,8 @@ app.get('/api/admin/topups', async (c) => {
 app.post('/api/admin/topups/action', async (c) => {
     try {
         const { id, action } = await c.req.json()
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
 
         const tx = await db.prepare('SELECT * FROM transactions WHERE id = ?').bind(id).first<any>()
         if (!tx) return c.json({ error: 'Transaction not found' }, 404)
@@ -1340,7 +1370,8 @@ app.post('/api/admin/topups/action', async (c) => {
 app.post('/api/admin/orders/action', async (c) => {
     try {
         const { orderId, status } = await c.req.json()
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
 
         if (!['success', 'failed', 'pending'].includes(status)) {
             return c.json({ error: 'Invalid status' }, 400)
@@ -1359,7 +1390,8 @@ app.post('/api/admin/orders/action', async (c) => {
 // Admin: Get Validations (Agent Requests)
 app.get('/api/admin/validations', async (c) => {
     try {
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
         const page = parseInt(c.req.query('page') || '1')
         const limit = parseInt(c.req.query('limit') || '10')
         const offset = (page - 1) * limit
@@ -1405,7 +1437,8 @@ app.get('/api/admin/validations', async (c) => {
 app.post('/api/admin/validations/action', async (c) => {
     try {
         const { id, action } = await c.req.json()
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
 
         const request = await db.prepare('SELECT * FROM agent_requests WHERE id = ?').bind(id).first<any>()
         if (!request) return c.json({ error: 'Request not found' }, 404)
@@ -1442,7 +1475,8 @@ app.post('/api/admin/sms', async (c) => {
 
 app.get('/api/admin/stats', async (c) => {
     try {
-        const db = c.env.DB
+        const db = getDB(c.env)
+        if (!db) throw new Error('Database connection failed')
         const usersCount = await db.prepare('SELECT COUNT(*) as count FROM users').first<any>()
         const revenue = await db.prepare("SELECT SUM(amount) as total FROM transactions WHERE status = 'success' OR status = 'approved'").first<any>()
         const pending = await db.prepare("SELECT COUNT(*) as count FROM transactions WHERE status = 'pending'").first<any>()

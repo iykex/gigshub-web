@@ -1,6 +1,8 @@
 // Cloudflare D1 database client
 // This will be used to interact with the D1 database
 
+import { createRequire } from 'module';
+
 export interface D1Database {
   prepare(query: string): D1PreparedStatement
   dump(): Promise<ArrayBuffer>
@@ -25,6 +27,7 @@ export interface D1Result<T = unknown> {
     size_after: number
     rows_read: number
     rows_written: number
+    last_row_id?: number
   }
 }
 
@@ -56,11 +59,12 @@ export function getDB(env?: any): D1Database | null {
     )
   }
 
-  // Local development fallback using better-sqlite3
+  // Local development fallback using better-sqlite3 - DISABLED to force online DB usage
+  /*
   if (process.env.NODE_ENV === 'development') {
     try {
-      const path = require('path')
-      const Database = require('better-sqlite3')
+      const requireFunc = createRequire(import.meta.url);
+      const path = requireFunc('path')
 
       // Try to find the local D1 file
       // This path might need adjustment based on your specific setup
@@ -71,6 +75,7 @@ export function getDB(env?: any): D1Database | null {
       console.error('Failed to initialize local D1 adapter:', e)
     }
   }
+  */
 
   return null
 }
@@ -209,7 +214,8 @@ class LocalD1Database implements D1Database {
   private db: any
 
   constructor(dbPath: string) {
-    const Database = require('better-sqlite3')
+    const requireFunc = createRequire(import.meta.url);
+    const Database = requireFunc('better-sqlite3');
     this.db = new Database(dbPath)
   }
 
